@@ -1,4 +1,5 @@
-![ChessBot_1 0](https://github.com/user-attachments/assets/d1a0ce25-c354-4417-84cb-620799ef97c9)
+![ChessBot_1 0 (1)](https://github.com/user-attachments/assets/cb3cde88-ff6f-4cfb-9981-8e7b9cb6da95)
+
 
 # ChessBot
 This Chessbot was made for a very specific and custom setup that never materialized. This was more of a proof of
