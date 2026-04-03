@@ -1,5 +1,5 @@
-C:\Users\Daniel\RustroverProjects\chessbot\target\debug\deps\chessbot.dll: src\lib.rs
+/home/dj/Projects/Chess/Bullet_Chess_Bot/target/debug/deps/chessbot.d: src/lib.rs
 
-C:\Users\Daniel\RustroverProjects\chessbot\target\debug\deps\chessbot.d: src\lib.rs
+/home/dj/Projects/Chess/Bullet_Chess_Bot/target/debug/deps/libchessbot.so: src/lib.rs
 
-src\lib.rs:
+src/lib.rs:

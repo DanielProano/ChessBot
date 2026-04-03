@@ -4,13 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-pyo3 = { version = "0.18", features = ["extension-module"] }
-cozy-chess = "0.3.4"
-chess = "3.2.0"
-rand = "0.9.0"
-lazy_static = "1.4"
-rayon = "1.10.0"
+wasm-bindgen = "0.2"
 
 [lib]
 name = "chessbot"
+path = "src/pieces.rs"
 crate-type = ["cdylib"]

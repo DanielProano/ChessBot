@@ -14,7 +14,12 @@ use pyo3::types::PyString;
 use std::str::FromStr;
 use pyo3::exceptions::socket::timeout;
 use pyo3::indoc::eprintdoc;
-
+pub mod search;
+pub mod best_move;
+pub mod hashing;
+pub mod moves;
+pub mod material;
+pub mod pieces;
 
 lazy_static! {
     static ref ZOBRIST: Zobrist = Zobrist::new();

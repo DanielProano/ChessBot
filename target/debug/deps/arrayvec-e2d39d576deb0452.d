@@ -1,0 +1,10 @@
+/home/dj/Projects/Chess/Bullet_Chess_Bot/target/debug/deps/arrayvec-e2d39d576deb0452.d: /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/lib.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/maybe_uninit.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/array.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/array_string.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/char.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/errors.rs
+
+/home/dj/Projects/Chess/Bullet_Chess_Bot/target/debug/deps/libarrayvec-e2d39d576deb0452.rmeta: /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/lib.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/maybe_uninit.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/array.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/array_string.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/char.rs /home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/errors.rs
+
+/home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/lib.rs:
+/home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/maybe_uninit.rs:
+/home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/array.rs:
+/home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/array_string.rs:
+/home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/char.rs:
+/home/dj/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrayvec-0.5.2/src/errors.rs:
