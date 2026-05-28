@@ -91,6 +91,7 @@ pub struct Square {
 
 pub struct PieceState {
     pub id: u32,
+    pub color: Color,
     pub piece: Piece,
     pub square: Square,
     pub moves: Option<Vec<Move>>
@@ -107,18 +108,17 @@ pub struct ColorState {
 
 #[derive(Clone, Copy)]
 pub struct Board {
-    board: [[Square; 8]; 8],
+    pub board: [[Square; 8]; 8],
 }
 
-#[wasm_bindgen]
 pub struct BoardState {
-    board: Board,
-    active_color: Color,
-    states: Vec<ColorState>,
-    previous_state: Option<BoardState>,
-    next_state: Option<BoardState>,
-    draw: DrawConditions,
-    time: Option<Time>
+    pub board: Board,
+    pub active_color: Color,
+    pub states: Vec<ColorState>,
+    pub previous_state: Option<Box<BoardState>>,
+    pub next_state: Option<Box<BoardState>>,
+    pub draw: DrawConditions,
+    pub time: Option<Time>
 }
 
 #[wasm_bindgen]
@@ -131,44 +131,44 @@ impl BoardState {
             for col in 0..8 {
                 white_pieces.push(PieceState {
                     id: unique_id,
-                    piece: START_BOARD.board.[row][col].piece,
-                    square: START_BOARD.board.[row][col],
+                    piece: Some(START_BOARD.board[row][col]).piece,
+                    square: START_BOARD.board[row][col],
                     moves: None
                 });
                 unique_id += 1;
             }
         }
 
-        let white_color_state: ColorState = {
+        let white_color_state: ColorState = ColorState {
             color: Color::White,
             in_check: false,
             pieces: white_pieces,
             time: None,
             en_passant: None,
-            castling: { castle_kingside: true, castle_queenside: true }
-        }
+            castling: CastlingRights { castle_kingside: true, castle_queenside: true }
+        };
 
         let mut black_pieces = vec![];
         for row in 0..2 {
             for col in 0..8 {
                 black_pieces.push(PieceState {
                     id: unique_id,
-                    piece: START_BOARD.board.[row][col].piece,
-                    square: START_BOARD.board.[row][col],
+                    piece: Some(START_BOARD.board[row][col]).piece,
+                    square: START_BOARD.board[row][col],
                     moves: None
                 });
                 unique_id += 1;
             }
         }
 
-        let black_color_state: ColorState = {
+        let black_color_state: ColorState = ColorState {
             color: Color::Black,
             in_check: false,
             pieces: black_pieces,
             time: None,
             en_passant: None,
-            castling: { castle_kingside: true, castle_queenside: true }
-        }
+            castling: CastlingRights { castle_kingside: true, castle_queenside: true }
+        };
 
         Self { 
             board: START_BOARD, 
@@ -269,10 +269,10 @@ impl FEN {
 
         let mut board: Board = EMPTY_BOARD;
         for (row_idx, row_str) in sections[0].split('/').enumerate().rev() {
-            let mut col_idx: usize = 0;
+            let mut col_idx: u32 = 0;
             for c in row_str.chars() {
                 if c.is_digit(10) {
-                    col_idx += c.to_digit(10).unwrap() as usize;
+                    col_idx += c.to_digit(10).unwrap() as u32;
                 } else {
                     board.board[row_idx][col_idx] = match c {
                         'P' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::WhitePawn) },

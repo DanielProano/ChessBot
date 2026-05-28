@@ -96,11 +96,14 @@ pub fn get_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
 
 pub fn get_white_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
     let mut moves: Vec<Move> = vec![];
-    if state.square.row == 2 && state.square.row + 2 <= 8 && board[state.square.row + 2][state.square.column].piece.is_none() {
+    let cur_row: u32 = state.square.row;
+    let cur_col: u32 = state.square.column;
+
+    if cur_row == 2 && cur_row + 2 <= 8 && board.board[cur_row + 2][cur_col].piece.is_none() {
         if let Some(mv) = create(
             state,
             state.square, 
-            Square { row: state.square.row + 2, column: state.square.column, piece: Some(Piece::WhitePawn)},
+            Square { row: cur_row + 2, column: cur_col, piece: Some(Piece::WhitePawn)},
             Color::White, 
             None, 
             None, 
@@ -110,17 +113,21 @@ pub fn get_white_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
         }
     }
 
-    if state.square.row + 1 <= 8 && board[state.square.row + 1][state.square.column].piece == None {
+    if cur_row + 1 > 8 {
+        return moves;
+    }
+
+    if board.board[cur_row + 1][cur_col].piece == None {
         if let Some(mut mv) = create(
             state,
             state.square, 
-            Square { row: state.square.row + 1, column: state.square.column, piece: Some(Piece::WhitePawn)},
+            Square { row: cur_row + 1, column: cur_col, piece: Some(Piece::WhitePawn)},
             Color::White, 
             None, 
             None, 
             false 
         ) {
-            if state.square.row + 1 == 8 {
+            if cur_row + 1 == 8 {
                 for &promotion_piece in &[Piece::WhiteBishop, Piece::WhiteKnight, Piece::WhiteQueen, Piece::WhiteRook] {
                     mv.promotion = Some(promotion_piece);
                     moves.push(mv);
@@ -131,17 +138,17 @@ pub fn get_white_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
         }
     }
 
-    if state.square.row + 1 <= 8 && state.square.column + 1 <= 8 && board[state.square.row + 1][state.square.column + 1].piece {
+    if cur_col + 1 <= 8 && board.board[cur_row + 1][cur_col + 1].piece {
         if let Some(mut mv)= create(
             state,
             state.square, 
-            Square { row: state.square.row + 1, column: state.square.column + 1, piece: Some(Piece::WhitePawn)}, 
+            Square { row: cur_row + 1, column: cur_col + 1, piece: Some(Piece::WhitePawn)}, 
             Color::White, 
-            Some(board[state.square.row + 1][state.square.column + 1].piece), 
+            Some(board.board[cur_row + 1][cur_col + 1].piece), 
             None, 
             false 
         ) {
-            if state.square.row + 1 == 8 {
+            if cur_row + 1 == 8 {
                 for &promotion_piece in &[Piece::WhiteBishop, Piece::WhiteKnight, Piece::WhiteQueen, Piece::WhiteRook] {
                     mv.promotion = Some(promotion_piece);
                     moves.push(mv);
@@ -152,17 +159,17 @@ pub fn get_white_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
         }
     }
 
-    if state.square.row + 1 <= 8 && state.square.column - 1 >= 1 && board[state.square.row + 1][state.square.column - 1].piece {
+    if cur_col - 1 >= 1 && board.board[cur_row + 1][cur_col - 1].piece {
         if let Some(mut mv) = create(
             state,
             state.square, 
-            Square { row: state.square.row + 1, column: state.square.column - 1, piece: Some(Piece::WhitePawn)}, 
+            Square { row: cur_row + 1, column: cur_col - 1, piece: Some(Piece::WhitePawn)}, 
             Color::White, 
-            Some(board[state.square.row + 1][state.square.column - 1].piece), 
+            Some(board.board[cur_row + 1][cur_col - 1].piece), 
             None, 
             false 
         ) {
-            if state.square.row + 1 == 8 {
+            if cur_row + 1 == 8 {
                 for &promotion_piece in &[Piece::WhiteBishop, Piece::WhiteKnight, Piece::WhiteQueen, Piece::WhiteRook] {
                     mv.promotion = Some(promotion_piece);
                     moves.push(mv);
@@ -187,6 +194,74 @@ pub fn get_knight_moves(state: PieceState, board: Board) -> Vec<Move> {
         Color::White => get_white_knight_moves(state, board),
         Color::Black => get_black_knight_moves(state, board)
     };
+}
+
+pub fn get_white_knight_moves(state: PieceState, board: Board) -> Vec<Move> {
+    let mut moves: Vec<Move> = vec![];
+    let cur_row: u32 = state.square.row;
+    let cur_col: u32 = state.square.column;
+
+    if cur_row + 2 <= 8 && cur_col + 1 <= 8 {
+        let mut potential_piece: Piece = board.board[cur_row + 2][cur_col + 1].piece;
+        if potential_piece.to_color() != state.color {
+            if !potential_piece.is_none() {
+                if let Some(mut mv) = create(
+                    state,
+                    state.square, 
+                    Square { row: cur_row + 2, column: cur_col + 1, piece: Some(Piece::WhiteKnight)}, 
+                    Color::White, 
+                    Some(potential_piece), 
+                    None, 
+                    false 
+                ) {
+                    moves.push(mv);
+                }
+            } else {
+                if let Some(mut mv) = create(
+                    state,
+                    state.square, 
+                    Square { row: cur_row + 2, column: cur_col + 1, piece: Some(Piece::WhiteKnight)}, 
+                    Color::White, 
+                    None, 
+                    None, 
+                    false 
+                ) {
+                    moves.push(mv);
+                }
+            }
+        }
+    }
+
+    let mut potential_piece: Piece = board.board[cur_row + 2][cur_col + 1].piece;
+    if cur_row + 2 <= 8 && cur_col + 1 <= 8 && potential_piece.to_color() != state.color {
+        if !potential_piece.is_none() {
+            if let Some(mut mv) = create(
+                state,
+                state.square, 
+                Square { row: cur_row + 2, column: cur_col + 1, piece: Some(Piece::WhiteKnight)}, 
+                Color::White, 
+                Some(potential_piece), 
+                None, 
+                false 
+            ) {
+                moves.push(mv);
+            }
+        } else {
+            if let Some(mut mv) = create(
+                state,
+                state.square, 
+                Square { row: cur_row + 2, column: cur_col + 1, piece: Some(Piece::WhiteKnight)}, 
+                Color::White, 
+                None, 
+                None, 
+                false 
+            ) {
+                moves.push(mv);
+            }
+        }
+    }
+    
+    moves
 }
 
 pub fn get_white_knight_moves(state: PieceState, board: Board) -> Vec<Move> {
