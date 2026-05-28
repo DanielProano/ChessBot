@@ -198,8 +198,20 @@ pub fn get_knight_moves(state: PieceState, board: Board) -> Vec<Move> {
 
 pub fn get_white_knight_moves(state: PieceState, board: Board) -> Vec<Move> {
     let mut moves: Vec<Move> = vec![];
-    let cur_row: u32 = state.square.row;
-    let cur_col: u32 = state.square.column;
+    let cur_row: i32 = state.square.row as i32;
+    let cur_col: i32 = state.square.column as i32;
+
+    let knight_deltas: [(i32, i32); 8] = [
+        (2, 1), (2, -1), (1, 2), (-1, 2),
+        (-2, 1), (-2, -1), (-1, 2), (-1, -2)
+    ];
+
+    for &(row, col) in &knight_deltas {
+        let 
+        if cur_row + row <= 8 && cur_row + row >= 1 && cur_col + col <= 8 && cur_col + col >= 1 {
+            let potential_piece: Piece = board.board[]
+        }
+    }
 
     if cur_row + 2 <= 8 && cur_col + 1 <= 8 {
         let mut potential_piece: Piece = board.board[cur_row + 2][cur_col + 1].piece;
@@ -264,7 +276,7 @@ pub fn get_white_knight_moves(state: PieceState, board: Board) -> Vec<Move> {
     moves
 }
 
-pub fn get_white_knight_moves(state: PieceState, board: Board) -> Vec<Move> {
+pub fn get_black_knight_moves(state: PieceState, board: Board) -> Vec<Move> {
     let mut moves = vec![];
     
 }
