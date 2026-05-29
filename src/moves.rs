@@ -105,7 +105,8 @@ pub fn get_white_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
             None, 
             None, 
             false 
-        ) {
+        ) 
+        {
             moves.push(mv);
         }
     }
