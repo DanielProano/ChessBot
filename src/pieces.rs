@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::moves::*;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub enum Color {
@@ -9,53 +9,34 @@ pub enum Color {
 
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
-pub enum Piece {
-    WhitePawn,
-    WhiteRook,
-    WhiteKnight,
-    WhiteBishop,
-    WhiteQueen,
-    WhiteKing,
-    BlackPawn,
-    BlackRook,
-    BlackKnight,
-    BlackBishop,
-    BlackQueen,
-    BlackKing,
+pub enum piece_state {
+    Pawn,
+    Rook,
+    Knight,
+    Bishop,
+    Queen,
+    King,
 }
 
-impl Piece {
-    pub fn to_char(self) -> String {
-        match self {
-            Piece::WhitePawn => 'P'.to_string(),
-            Piece::WhiteRook => 'R'.to_string(),
-            Piece::WhiteKnight => 'N'.to_string(),
-            Piece::WhiteBishop => 'B'.to_string(),
-            Piece::WhiteQueen => 'Q'.to_string(),
-            Piece::WhiteKing => 'K'.to_string(),
-            Piece::BlackPawn => 'p'.to_string(),
-            Piece::BlackRook => 'r'.to_string(),
-            Piece::BlackKnight => 'n'.to_string(),
-            Piece::BlackBishop => 'b'.to_string(),
-            Piece::BlackQueen => 'q'.to_string(),
-            Piece::BlackKing => 'k'.to_string(),
-        }
-    }
-
-    pub fn to_color(self) -> Color {
-        match self {
-            Piece::WhitePawn => Color::White,
-            Piece::WhiteRook => Color::White,
-            Piece::WhiteKnight => Color::White,
-            Piece::WhiteBishop => Color::White,
-            Piece::WhiteQueen => Color::White,
-            Piece::WhiteKing => Color::White,
-            Piece::BlackPawn => Color::Black,
-            Piece::BlackRook => Color::Black,
-            Piece::BlackKnight => Color::Black,
-            Piece::BlackBishop => Color::Black,
-            Piece::BlackQueen => Color::Black,
-            Piece::BlackKing => Color::Black,
+impl piece_state {
+    pub fn to_char(self, color: Color) -> String {
+        match color {
+            Color::White => match Self {
+                piece_state::Pawn => 'P'.to_string(),
+                piece_state::Rook => 'R'.to_string(),
+                piece_state::Knight => 'N'.to_string(),
+                piece_state::Bishop => 'B'.to_string(),
+                piece_state::Queen => 'Q'.to_string(),
+                piece_state::King => 'K'.to_string(),
+            },
+            Color::Black => match Self {
+                piece_state::Pawn => 'p'.to_string(),
+                piece_state::Rook => 'r'.to_string(),
+                piece_state::Knight => 'n'.to_string(),
+                piece_state::Bishop => 'b'.to_string(),
+                piece_state::Queen => 'q'.to_string(),
+                piece_state::King => 'k'.to_string(),
+            },
         }
     }
 }
@@ -81,32 +62,25 @@ pub struct Time {
     cur_time: u32,
 }
 
-
-#[derive(Copy, Clone)]
 pub struct Square {
     pub row: u32,
     pub column: u32,
-    pub piece: Option<Piece>
+    pub piece_state: Option<PieceState>,
 }
 
 pub struct PieceState {
     pub id: u32,
     pub color: Color,
-    pub piece: Piece,
-    pub square: Square,
-    pub moves: Option<Vec<Move>>
+    pub piece_state: piece_state,
 }
 
 pub struct ColorState {
     pub color: Color,
     pub in_check: bool,
-    pub pieces: Vec<PieceState>,
-    pub time: Option<Time>,
     pub en_passant: Option<EnPassant>,
     pub castling: CastlingRights,
 }
 
-#[derive(Clone, Copy)]
 pub struct Board {
     pub board: [[Square; 8]; 8],
 }
@@ -114,26 +88,24 @@ pub struct Board {
 pub struct BoardState {
     pub board: Board,
     pub active_color: Color,
-    pub states: Vec<ColorState>,
-    pub previous_state: Option<Box<BoardState>>,
-    pub next_state: Option<Box<BoardState>>,
+    pub white_state: ColorState,
+    pub black_state: ColorState,
     pub draw: DrawConditions,
-    pub time: Option<Time>
+    pub time: Option<Time>,
 }
 
 #[wasm_bindgen]
 impl BoardState {
     fn start() -> Self {
-        let mut white_pieces = vec![];
+        let mut white_piece_states = vec![];
         let mut unique_id = 0;
 
         for row in 6..8 {
             for col in 0..8 {
-                white_pieces.push(PieceState {
+                white_piece_states.push(PieceState {
                     id: unique_id,
-                    piece: Some(START_BOARD.board[row][col]).piece,
-                    square: START_BOARD.board[row][col],
-                    moves: None
+                    piece_state: Some(START_BOARD.board[row][col]).piece_state,
+                    color: Color::White
                 });
                 unique_id += 1;
             }
@@ -142,20 +114,20 @@ impl BoardState {
         let white_color_state: ColorState = ColorState {
             color: Color::White,
             in_check: false,
-            pieces: white_pieces,
-            time: None,
             en_passant: None,
-            castling: CastlingRights { castle_kingside: true, castle_queenside: true }
+            castling: CastlingRights {
+                castle_kingside: true,
+                castle_queenside: true,
+            },
         };
 
-        let mut black_pieces = vec![];
+        let mut black_piece_states = vec![];
         for row in 0..2 {
             for col in 0..8 {
-                black_pieces.push(PieceState {
+                black_piece_states.push(PieceState {
                     id: unique_id,
-                    piece: Some(START_BOARD.board[row][col]).piece,
-                    square: START_BOARD.board[row][col],
-                    moves: None
+                    piece_state: Some(START_BOARD.board[row][col]).piece_state,
+                    color: Color::Black
                 });
                 unique_id += 1;
             }
@@ -164,61 +136,94 @@ impl BoardState {
         let black_color_state: ColorState = ColorState {
             color: Color::Black,
             in_check: false,
-            pieces: black_pieces,
-            time: None,
             en_passant: None,
-            castling: CastlingRights { castle_kingside: true, castle_queenside: true }
+            castling: CastlingRights {
+                castle_kingside: true,
+                castle_queenside: true,
+            },
         };
 
-        Self { 
-            board: START_BOARD, 
-            active_color: Color::White, 
-            states: vec![white_color_state, black_color_state],
-            previous_state: None, 
-            next_state: None,
-            draw: DrawConditions { 
-                draw: false, 
-                fifty_move_counter: 0, 
-                threefold_counter: 0 
-            }, 
-            time: None
+        Self {
+            board: START_BOARD,
+            active_color: Color::White,
+            
+            draw: DrawConditions {
+                draw: false,
+                fifty_move_counter: 0,
+                threefold_counter: 0,
+            },
+            time: None,
         }
     }
 
-    fn update(fen: FEN) {
-
-    }
+    fn update(fen: FEN) {}
 }
 
-pub static START_BOARD: Board = Board { board: [
-    [Square{ row: 8, column: 1, piece: Some(Piece::BlackRook)}, Square{ row: 8, column: 2, piece: Some(Piece::BlackKnight)}, Square{ row: 8, column: 3, piece: Some(Piece::BlackBishop)}, Square{ row: 8, column: 4, piece: Some(Piece::BlackQueen)}, Square{ row: 8, column: 5, piece: Some(Piece::BlackKing)}, Square{ row: 8, column: 6, piece: Some(Piece::BlackBishop)}, Square{ row: 8, column: 7, piece: Some(Piece::BlackKnight)}, Square{ row: 8, column: 8, piece: Some(Piece::BlackRook)}],
-    [Square{ row: 7, column: 1, piece: Some(Piece::BlackPawn)}, Square{ row: 7, column: 2, piece: Some(Piece::BlackPawn)}, Square{ row: 7, column: 3, piece: Some(Piece::BlackPawn)}, Square{ row: 7, column: 4, piece: Some(Piece::BlackPawn)}, Square{ row: 7, column: 5, piece: Some(Piece::BlackPawn)}, Square{ row: 7, column: 6, piece: Some(Piece::BlackPawn)}, Square{ row: 7, column: 7, piece: Some(Piece::BlackPawn)}, Square{ row: 7, column: 8, piece: Some(Piece::BlackPawn)}],
-    [Square{ row: 6, column: 1, piece: None}, Square{ row: 6, column: 2, piece: None}, Square{ row: 6, column: 3, piece: None}, Square{ row: 6, column: 4, piece: None}, Square{ row: 6, column: 5, piece: None}, Square{ row: 6, column: 6, piece: None}, Square{ row: 6, column: 7, piece: None}, Square{ row: 6, column: 8, piece: None}],
-    [Square{ row: 5, column: 1, piece: None}, Square{ row: 5, column: 2, piece: None}, Square{ row: 5, column: 3, piece: None}, Square{ row: 5, column: 4, piece: None}, Square{ row: 5, column: 5, piece: None}, Square{ row: 5, column: 6, piece: None}, Square{ row: 5, column: 7, piece: None}, Square{ row: 5, column: 8, piece: None}],
-    [Square{ row: 4, column: 1, piece: None}, Square{ row: 4, column: 2, piece: None}, Square{ row: 4, column: 3, piece: None}, Square{ row: 4, column: 4, piece: None}, Square{ row: 4, column: 5, piece: None}, Square{ row: 4, column: 6, piece: None}, Square{ row: 4, column: 7, piece: None}, Square{ row: 4, column: 8, piece: None}],
-    [Square{ row: 3, column: 1, piece: None}, Square{ row: 3, column: 2, piece: None}, Square{ row: 3, column: 3, piece: None}, Square{ row: 3, column: 4, piece: None}, Square{ row: 3, column: 5, piece: None}, Square{ row: 3, column: 6, piece: None}, Square{ row: 3, column: 7, piece: None}, Square{ row: 3, column: 8, piece: None}],
-    [Square{ row: 2, column: 1, piece: Some(Piece::WhitePawn)}, Square{ row: 2, column: 2, piece: Some(Piece::WhitePawn)}, Square{ row: 2, column: 3, piece: Some(Piece::WhitePawn)}, Square{ row: 2, column: 4, piece: Some(Piece::WhitePawn)}, Square{ row: 2, column: 5, piece: Some(Piece::WhitePawn)}, Square{ row: 2, column: 6, piece: Some(Piece::WhitePawn)}, Square{ row: 2, column: 7, piece: Some(Piece::WhitePawn)}, Square{ row: 2, column: 8, piece: Some(Piece::WhitePawn)}],
-    [Square{ row: 1, column: 1, piece: Some(Piece::WhiteRook)}, Square{ row: 1, column: 2, piece: Some(Piece::WhiteKnight)}, Square{ row: 1, column: 3, piece: Some(Piece::WhiteBishop)}, Square{ row: 1, column: 4, piece: Some(Piece::WhiteQueen)}, Square{ row: 1, column: 5, piece: Some(Piece::WhiteKing)}, Square{ row: 1, column: 6, piece: Some(Piece::WhiteBishop)}, Square{ row: 1, column: 7, piece: Some(Piece::WhiteKnight)}, Square{ row: 1, column: 8, piece: Some(Piece::WhiteRook)}],
-] };
+pub static START_BOARD: Board = Board {
+    board: [
+        // Row 8 (Black back rank)
+        [
+            Square { row: 8, column: 1, piece_state: Some(PieceState { id: 0, color: Color::Black, piece: Piece::Rook }) },
+            Square { row: 8, column: 2, piece_state: Some(PieceState { id: 1, color: Color::Black, piece: Piece::Knight }) },
+            Square { row: 8, column: 3, piece_state: Some(PieceState { id: 2, color: Color::Black, piece: Piece::Bishop }) },
+            Square { row: 8, column: 4, piece_state: Some(PieceState { id: 3, color: Color::Black, piece: Piece::Queen }) },
+            Square { row: 8, column: 5, piece_state: Some(PieceState { id: 4, color: Color::Black, piece: Piece::King }) },
+            Square { row: 8, column: 6, piece_state: Some(PieceState { id: 5, color: Color::Black, piece: Piece::Bishop }) },
+            Square { row: 8, column: 7, piece_state: Some(PieceState { id: 6, color: Color::Black, piece: Piece::Knight }) },
+            Square { row: 8, column: 8, piece_state: Some(PieceState { id: 7, color: Color::Black, piece: Piece::Rook }) },
+        ],
+        // Row 7 (Black pawns)
+        std::array::from_fn(|col| Square {
+            row: 7,
+            column: (col + 1) as u32,
+            piece_state: Some(PieceState { id: (8 + col) as u32, color: Color::Black, piece: Piece::Pawn }),
+        }),
+        // Rows 6-3 (Empty)
+        [Square { row: 6, column: 1, piece_state: None }; 8],
+        [Square { row: 5, column: 1, piece_state: None }; 8],
+        [Square { row: 4, column: 1, piece_state: None }; 8],
+        [Square { row: 3, column: 1, piece_state: None }; 8],
+        // Row 2 (White pawns)
+        std::array::from_fn(|col| Square {
+            row: 2,
+            column: (col + 1) as u32,
+            piece_state: Some(PieceState { id: (16 + col) as u32, color: Color::White, piece: Piece::Pawn }),
+        }),
+        // Row 1 (White back rank)
+        [
+            Square { row: 1, column: 1, piece_state: Some(PieceState { id: 24, color: Color::White, piece: Piece::Rook }) },
+            Square { row: 1, column: 2, piece_state: Some(PieceState { id: 25, color: Color::White, piece: Piece::Knight }) },
+            Square { row: 1, column: 3, piece_state: Some(PieceState { id: 26, color: Color::White, piece: Piece::Bishop }) },
+            Square { row: 1, column: 4, piece_state: Some(PieceState { id: 27, color: Color::White, piece: Piece::Queen }) },
+            Square { row: 1, column: 5, piece_state: Some(PieceState { id: 28, color: Color::White, piece: Piece::King }) },
+            Square { row: 1, column: 6, piece_state: Some(PieceState { id: 29, color: Color::White, piece: Piece::Bishop }) },
+            Square { row: 1, column: 7, piece_state: Some(PieceState { id: 30, color: Color::White, piece: Piece::Knight }) },
+            Square { row: 1, column: 8, piece_state: Some(PieceState { id: 31, color: Color::White, piece: Piece::Rook }) },
+        ],
+    ],
+};
 
-pub static EMPTY_BOARD: Board = Board { board: [
-    [Square{ row: 8, column: 1, piece: None}, Square{ row: 8, column: 2, piece: None}, Square{ row: 8, column: 3, piece: None}, Square{ row: 8, column: 4, piece: None}, Square{ row: 8, column: 5, piece: None}, Square{ row: 8, column: 6, piece: None}, Square{ row: 8, column: 7, piece: None}, Square{ row: 8, column: 8, piece: None}],
-    [Square{ row: 7, column: 1, piece: None}, Square{ row: 7, column: 2, piece: None}, Square{ row: 7, column: 3, piece: None}, Square{ row: 7, column: 4, piece: None}, Square{ row: 7, column: 5, piece: None}, Square{ row: 7, column: 6, piece: None}, Square{ row: 7, column: 7, piece: None}, Square{ row: 7, column: 8, piece: None}],
-    [Square{ row: 6, column: 1, piece: None}, Square{ row: 6, column: 2, piece: None}, Square{ row: 6, column: 3, piece: None}, Square{ row: 6, column: 4, piece: None}, Square{ row: 6, column: 5, piece: None}, Square{ row: 6, column: 6, piece: None}, Square{ row: 6, column: 7, piece: None}, Square{ row: 6, column: 8, piece: None}],
-    [Square{ row: 5, column: 1, piece: None}, Square{ row: 5, column: 2, piece: None}, Square{ row: 5, column: 3, piece: None}, Square{ row: 5, column: 4, piece: None}, Square{ row: 5, column: 5, piece: None}, Square{ row: 5, column: 6, piece: None}, Square{ row: 5, column: 7, piece: None}, Square{ row: 5, column: 8, piece: None}],
-    [Square{ row: 4, column: 1, piece: None}, Square{ row: 4, column: 2, piece: None}, Square{ row: 4, column: 3, piece: None}, Square{ row: 4, column: 4, piece: None}, Square{ row: 4, column: 5, piece: None}, Square{ row: 4, column: 6, piece: None}, Square{ row: 4, column: 7, piece: None}, Square{ row: 4, column: 8, piece: None}],
-    [Square{ row: 3, column: 1, piece: None}, Square{ row: 3, column: 2, piece: None}, Square{ row: 3, column: 3, piece: None}, Square{ row: 3, column: 4, piece: None}, Square{ row: 3, column: 5, piece: None}, Square{ row: 3, column: 6, piece: None}, Square{ row: 3, column: 7, piece: None}, Square{ row: 3, column: 8, piece: None}],
-    [Square{ row: 2, column: 1, piece: None}, Square{ row: 2, column: 2, piece: None}, Square{ row: 2, column: 3, piece: None}, Square{ row: 2, column: 4, piece: None}, Square{ row: 2, column: 5, piece: None}, Square{ row: 2, column: 6, piece: None}, Square{ row: 2, column: 7, piece: None}, Square{ row: 2, column: 8, piece: None}],
-    [Square{ row: 1, column: 1, piece: None}, Square{ row: 1, column: 2, piece: None}, Square{ row: 1, column: 3, piece: None}, Square{ row: 1, column: 4, piece: None}, Square{ row: 1, column: 5, piece: None}, Square{ row: 1, column: 6, piece: None}, Square{ row: 1, column: 7, piece: None}, Square{ row: 1, column: 8, piece: None}],
-] };
+pub static EMPTY_BOARD: Board = Board {
+    board: std::array::from_fn(|row| {
+        std::array::from_fn(|col| Square {
+            row: (8 - row) as u32,
+            column: (col + 1) as u32,
+            piece_state: None,
+        })
+    }),
+};
 
 pub fn simple_algebraic_to_grid(notation: &str) -> Option<EnPassant> {
-    let mut square = Square { row: 0, column: 0, piece: None };
+    let mut square = Square {
+        row: 0,
+        column: 0,
+        piece_state: None,
+    };
 
     if notation.chars().next() == Some('-') {
         return None;
     }
-    
+
     if notation.len() != 2 {
         panic!("Invalid algebraic length");
     }
@@ -236,8 +241,7 @@ pub fn simple_algebraic_to_grid(notation: &str) -> Option<EnPassant> {
                 'h' => square.column = 8,
                 _ => panic!("Invalid algebraic syntax"),
             }
-        }
-        else if char.is_numeric() {
+        } else if char.is_numeric() {
             match char {
                 '1' => square.row = 1,
                 '2' => square.row = 2,
@@ -264,7 +268,9 @@ pub struct FEN {
 
 impl FEN {
     pub fn to_board(&self) -> Option<Board> {
-        if !FEN::check_fen(&self.fen_str) { return None; }
+        if !FEN::check_fen(&self.fen_str) {
+            return None;
+        }
         let sections: Vec<&str> = self.fen_str.split(' ').collect();
 
         let mut board: Board = EMPTY_BOARD;
@@ -275,19 +281,71 @@ impl FEN {
                     col_idx += c.to_digit(10).unwrap() as u32;
                 } else {
                     board.board[row_idx][col_idx] = match c {
-                        'P' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::WhitePawn) },
-                        'R' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::WhiteRook) },
-                        'N' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::WhiteKnight) },
-                        'B' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::WhiteBishop) },
-                        'Q' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::WhiteQueen) },
-                        'K' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::WhiteKing) },
-                        'p' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::BlackPawn) },
-                        'r' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::BlackRook) },
-                        'n' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::BlackKnight) },
-                        'b' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::BlackBishop) },
-                        'q' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::BlackQueen) },
-                        'k' => Square { row: row_idx + 1, column: col_idx + 1, piece: Some(Piece::BlackKing) },
-                        _ => Square { row: row_idx + 1, column: col_idx + 1, piece: None },
+                        'P' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::WhitePawn),
+                        },
+                        'R' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::WhiteRook),
+                        },
+                        'N' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::WhiteKnight),
+                        },
+                        'B' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::WhiteBishop),
+                        },
+                        'Q' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::WhiteQueen),
+                        },
+                        'K' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::WhiteKing),
+                        },
+                        'p' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::BlackPawn),
+                        },
+                        'r' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::BlackRook),
+                        },
+                        'n' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::BlackKnight),
+                        },
+                        'b' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::BlackBishop),
+                        },
+                        'q' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::BlackQueen),
+                        },
+                        'k' => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: Some(piece_state::BlackKing),
+                        },
+                        _ => Square {
+                            row: row_idx + 1,
+                            column: col_idx + 1,
+                            piece_state: None,
+                        },
                     };
                     col_idx += 1;
                 }
@@ -300,8 +358,12 @@ impl FEN {
 #[wasm_bindgen]
 impl FEN {
     pub fn new(fen_str: &str) -> Option<FEN> {
-        if !FEN::check_fen(fen_str) { return None; }
-        Some(FEN { fen_str: fen_str.to_string() })
+        if !FEN::check_fen(fen_str) {
+            return None;
+        }
+        Some(FEN {
+            fen_str: fen_str.to_string(),
+        })
     }
 
     pub fn check_fen(fen_str: &str) -> bool {
@@ -334,19 +396,19 @@ impl FEN {
             let mut item_count = 0;
             for c in row.chars() {
                 match c {
-                    'r' | 'n' | 'b' | 'q' | 'k' | 'p' |
-                    'R' | 'N' | 'B' | 'Q' | 'K' | 'P' => item_count += 1,
+                    'r' | 'n' | 'b' | 'q' | 'k' | 'p' | 'R' | 'N' | 'B' | 'Q' | 'K' | 'P' => {
+                        item_count += 1
+                    }
                     '1'..='8' => item_count += c.to_digit(10).unwrap() as i32,
                     _ => return false,
                 }
             }
             if item_count != 8 {
-                return false
+                return false;
             }
         }
         true
     }
-
 
     pub fn to_board_state(self) -> Option<BoardState> {
         if !FEN::check_fen(&self.fen_str) {
@@ -361,7 +423,6 @@ impl FEN {
             _ => panic!("Invalid color"),
         };
 
-
         for char in fen_sections[2].chars() {
             match char {
                 '-' => break,
@@ -372,7 +433,7 @@ impl FEN {
                 _ => panic!("Problem parsing FEN"),
             }
         }
-        
+
         let en_passant: Option<EnPassant> = simple_algebraic_to_grid(fen_sections[3]);
 
         let mut draw: DrawConditions = DrawConditions {
@@ -385,16 +446,12 @@ impl FEN {
             draw.draw = true;
         }
 
-        Some(BoardState { 
-            board: board, 
-            active_color: color,  
-            castling: castling, 
-            en_passant: en_passant, 
-            previous_state: None, 
-            next_state: None,
+        Some(BoardState {
+            board: board,
+            active_color: color,
+            white_color_state: 
             draw: draw,
-            time: None
+            time: None,
         })
     }
 }
-
