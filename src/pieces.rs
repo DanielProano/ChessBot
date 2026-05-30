@@ -9,7 +9,7 @@ pub enum Color {
 
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
-pub enum piece_state {
+pub enum Piece {
     Pawn,
     Rook,
     Knight,
@@ -18,24 +18,24 @@ pub enum piece_state {
     King,
 }
 
-impl piece_state {
+impl Piece {
     pub fn to_char(self, color: Color) -> String {
         match color {
             Color::White => match Self {
-                piece_state::Pawn => 'P'.to_string(),
-                piece_state::Rook => 'R'.to_string(),
-                piece_state::Knight => 'N'.to_string(),
-                piece_state::Bishop => 'B'.to_string(),
-                piece_state::Queen => 'Q'.to_string(),
-                piece_state::King => 'K'.to_string(),
+                Piece::Pawn => 'P'.to_string(),
+                Piece::Rook => 'R'.to_string(),
+                Piece::Knight => 'N'.to_string(),
+                Piece::Bishop => 'B'.to_string(),
+                Piece::Queen => 'Q'.to_string(),
+                Piece::King => 'K'.to_string(),
             },
             Color::Black => match Self {
-                piece_state::Pawn => 'p'.to_string(),
-                piece_state::Rook => 'r'.to_string(),
-                piece_state::Knight => 'n'.to_string(),
-                piece_state::Bishop => 'b'.to_string(),
-                piece_state::Queen => 'q'.to_string(),
-                piece_state::King => 'k'.to_string(),
+                Piece::Pawn => 'p'.to_string(),
+                Piece::Rook => 'r'.to_string(),
+                Piece::Knight => 'n'.to_string(),
+                Piece::Bishop => 'b'.to_string(),
+                Piece::Queen => 'q'.to_string(),
+                Piece::King => 'k'.to_string(),
             },
         }
     }
@@ -71,7 +71,8 @@ pub struct Square {
 pub struct PieceState {
     pub id: u32,
     pub color: Color,
-    pub piece_state: piece_state,
+    pub piece: Piece,
+    pub has_moved: bool
 }
 
 pub struct ColorState {
