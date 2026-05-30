@@ -98,7 +98,7 @@ pub fn calculate_material(board: &Board) -> i32 {
     
     for row in 1..=8 {
         for col in 1..=8 {
-            if let Some(piece_state) = board.board[row][col].piece {
+            if let Some(piece_state) = board.board[row][col].piece_state {
                 let index = (8 - row) * 8 + (col - 1);
                 let material = get_piece_value(piece_state.piece);
                 let position = get_position_bonus(piece_state, index, phase);
@@ -117,13 +117,13 @@ fn evaluate_phase(board: &Board) -> GamePhase {
     
     for row in 1..=8 {
         for col in 1..=8 {
-            if let Some(piece) = board.board[row][col].piece {
-                material += match piece.piece {
+            if let Some(state) = board.board[row][col].piece_state {
+                material += match state.piece {
                     Piece::Pawn => 1,
                     Piece::Knight | Piece::Bishop => 3,
                     Piece::Rook => 5,
                     Piece::Queen => 9,
-                    _ => 0,
+                    Piece::King => 0,
                 };
             }
         }

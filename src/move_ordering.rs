@@ -1,7 +1,7 @@
 use crate::moves::*;
 use crate::pieces::*;
 
-pub fn generate_moves(state: &BoardState,board: &Board) -> Vec<Move> {
+pub fn generate_moves(board_state: &BoardState,board: &Board) -> Vec<Move> {
     let mut moves: Vec<Move> = vec![];
 
     for row in 0..=7 {
@@ -38,5 +38,5 @@ pub fn generate_moves(state: &BoardState,board: &Board) -> Vec<Move> {
 }
 
 pub fn order_moves(moves: Vec<Move>) -> Vec<Move> {
-    
+    moves
 }

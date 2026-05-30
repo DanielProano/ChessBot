@@ -2,13 +2,14 @@ use crate::moves::*;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
     White,
     Black,
 }
 
 #[wasm_bindgen]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Piece {
     Pawn,
     Rook,
@@ -21,7 +22,7 @@ pub enum Piece {
 impl Piece {
     pub fn to_char(self, color: Color) -> String {
         match color {
-            Color::White => match Self {
+            Color::White => match self {
                 Piece::Pawn => 'P'.to_string(),
                 Piece::Rook => 'R'.to_string(),
                 Piece::Knight => 'N'.to_string(),
@@ -42,50 +43,61 @@ impl Piece {
 }
 
 // Only tracks whether rooks or kings have moved
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CastlingRights {
     castle_kingside: bool,
     castle_queenside: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnPassant {
     target: Square,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DrawConditions {
     draw: bool,
-    fifty_move_counter: u32,
-    threefold_counter: u32,
+    fifty_move_counter: usize,
+    threefold_counter: usize,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Time {
     alloted_time: u32,
     cur_time: u32,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PieceState {
+    pub id: usize,
+    pub color: Color,
+    pub piece: Piece,
+    pub location: (usize, usize),
+    pub has_moved: bool,
+    pub dead: bool
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Square {
-    pub row: u32,
-    pub column: u32,
+    pub row: usize,
+    pub column: usize,
     pub piece_state: Option<PieceState>,
 }
 
-pub struct PieceState {
-    pub id: u32,
-    pub color: Color,
-    pub piece: Piece,
-    pub has_moved: bool
-}
-
-pub struct ColorState {
-    pub color: Color,
-    pub in_check: bool,
-    pub en_passant: Option<EnPassant>,
-    pub castling: CastlingRights,
-}
-
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Board {
     pub board: [[Square; 8]; 8],
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ColorState {
+    pub color: Color,
+    pub in_check: bool,
+    pub en_passant: Option<EnPassant>,
+    pub castling: CastlingRights
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BoardState {
     pub board: Board,
     pub active_color: Color,
