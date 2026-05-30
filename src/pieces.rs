@@ -173,24 +173,20 @@ pub static START_BOARD: Board = Board {
             Square { row: 8, column: 7, piece_state: Some(PieceState { id: 6, color: Color::Black, piece: Piece::Knight }) },
             Square { row: 8, column: 8, piece_state: Some(PieceState { id: 7, color: Color::Black, piece: Piece::Rook }) },
         ],
-        // Row 7 (Black pawns)
         std::array::from_fn(|col| Square {
             row: 7,
             column: (col + 1) as u32,
             piece_state: Some(PieceState { id: (8 + col) as u32, color: Color::Black, piece: Piece::Pawn }),
         }),
-        // Rows 6-3 (Empty)
         [Square { row: 6, column: 1, piece_state: None }; 8],
         [Square { row: 5, column: 1, piece_state: None }; 8],
         [Square { row: 4, column: 1, piece_state: None }; 8],
         [Square { row: 3, column: 1, piece_state: None }; 8],
-        // Row 2 (White pawns)
         std::array::from_fn(|col| Square {
             row: 2,
             column: (col + 1) as u32,
             piece_state: Some(PieceState { id: (16 + col) as u32, color: Color::White, piece: Piece::Pawn }),
         }),
-        // Row 1 (White back rank)
         [
             Square { row: 1, column: 1, piece_state: Some(PieceState { id: 24, color: Color::White, piece: Piece::Rook }) },
             Square { row: 1, column: 2, piece_state: Some(PieceState { id: 25, color: Color::White, piece: Piece::Knight }) },

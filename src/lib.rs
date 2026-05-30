@@ -20,6 +20,7 @@ pub mod hashing;
 pub mod moves;
 pub mod material;
 pub mod pieces;
+pub mod move_ordering;
 
 lazy_static! {
     static ref ZOBRIST: Zobrist = Zobrist::new();
