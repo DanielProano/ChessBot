@@ -100,7 +100,7 @@ fn add_pawn_move(
         state,
         state.square,
         Square { row: target_row, column: target_col, piece_state: Some(state) },
-        Color::White,
+        state.color,
         captured,
         None,
         false,
@@ -144,7 +144,7 @@ pub fn get_white_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
         add_pawn_move(&mut moves, state, cur_row + 1, cur_col, None);
     }
 
-    if cur_row < 8 && cur_row < 8 {
+    if cur_row < 8 && cur_col < 8 {
         if let Some(target_piece) = board.board[cur_row + 1][cur_col + 1].piece {
             add_pawn_move(&mut moves, state, cur_row + 1, cur_col + 1, target_piece);
         }
@@ -153,6 +153,35 @@ pub fn get_white_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
     if cur_row < 8 && cur_col > 1 {
         if let Some(target_piece) = board.board[cur_row + 1][cur_col - 1].piece {
             add_pawn_move(&mut moves, state, cur_row + 1, cur_col - 1, target_piece);
+        }
+    }
+
+    moves
+}
+
+
+pub fn get_black_pawn_moves(state: PieceState, board: Board) -> Vec<Move> {
+    let mut moves: Vec<Move> = vec![];
+    let cur_row: u32 = state.square.row;
+    let cur_col: u32 = state.square.column;
+
+    if cur_row == 7 && board.board[cur_row - 2][cur_col].piece.is_none() {
+        add_pawn_move(&mut moves, state, cur_row - 2, cur_col, None);
+    }
+
+    if cur_row - 1 >= 1 && board.board[cur_row - 1][cur_col].piece.is_none() {
+        add_pawn_move(&mut moves, state, cur_row - 1, cur_col, None);
+    }
+
+    if cur_row > 1 && cur_col > 1 {
+        if let Some(target_piece) = board.board[cur_row - 1][cur_col - 1].piece {
+            add_pawn_move(&mut moves, state, cur_row - 1, cur_col - 1, target_piece);
+        }
+    }
+
+    if cur_row > 1 && cur_col < 8 {
+        if let Some(target_piece) = board.board[cur_row - 1][cur_col + 1].piece {
+            add_pawn_move(&mut moves, state, cur_row - 1, cur_col + 1, target_piece);
         }
     }
 
