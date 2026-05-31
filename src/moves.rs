@@ -326,7 +326,7 @@ pub fn diagonal_is_attacked(square: Square, active_color: Color, board: &Board) 
                 break;
             }
 
-            let target_sqr = board.board[target_row -1][target_col - 1];
+            let target_sqr = board.board[target_row -1 ][target_col - 1];
             if let Some(state) = target_sqr.piece_state {
                 if (state.piece == Piece::Queen || state.piece == Piece::Bishop) && state.color != active_color {
                     return true;
@@ -472,16 +472,17 @@ pub fn get_knight_moves(state: PieceState, board: &Board) -> Vec<Move> {
     }
 
     let mut moves: Vec<Move> = vec![];
-    let cur_row: i32 = state.location.0 as i32;
-    let cur_col: i32 = state.location.1 as i32;
+    let cur_row = state.location.0;
+    let cur_col = state.location.1;
 
     for &(row, col) in &KNIGHT_DELTAS {
-        let target_row: usize = (cur_row + row) as usize;
-        let target_col: usize = (cur_col + col) as usize;
+        let target_row: usize = (cur_row as i32 + row) as usize;
+        let target_col: usize = (cur_col as i32 + col) as usize;
 
         if in_bounds(target_row, target_col) {
-            let previous_square = board.board[target_row - 1][target_col - 1];
-            let potential_piece: Option<PieceState> = previous_square.piece_state;
+            let previous_square = board.board[cur_row - 1][cur_col - 1];
+            let target_square = board.board[target_row - 1][target_col - 1];
+            let potential_piece: Option<PieceState> = target_square.piece_state;
 
             match potential_piece {
                 Some(mut captured) if captured.color != state.color => {
@@ -534,20 +535,22 @@ pub fn get_bishop_moves(state: PieceState, board: &Board) -> Vec<Move> {
     }
 
     let mut moves: Vec<Move> = vec![];
-    let cur_row: i32 = state.location.0 as i32;
-    let cur_col: i32 = state.location.1 as i32;
+    let cur_row = state.location.0;
+    let cur_col = state.location.1;
 
     for &(dr, dc) in &BISHOP_DELTAS {
         for offset in 1..8 {
-            let target_row = (cur_row + dr * offset) as usize;
-            let target_col = (cur_col + dc * offset) as usize;
+            let target_row = (cur_row as i32 + dr * offset) as usize;
+            let target_col = (cur_col as i32 + dc * offset) as usize;
 
             if !in_bounds(target_row, target_col) {
                 break;
             }
 
-            let previous_square = board.board[target_row - 1][target_col - 1];
-            if let Some(captured) = previous_square.piece_state {
+            let previous_square = board.board[cur_row - 1][cur_col - 1];
+            let target_square = board.board[target_row - 1][target_col - 1];
+            
+            if let Some(captured) = target_square.piece_state {
                 if captured.color != state.color {
                     if let Some(mv) = create(
                         state,
@@ -596,20 +599,21 @@ pub fn get_rook_moves(state: PieceState, board: &Board) -> Vec<Move> {
     }
 
     let mut moves: Vec<Move> = vec![];
-    let cur_row: i32 = state.location.0 as i32;
-    let cur_col: i32 = state.location.1 as i32;
+    let cur_row = state.location.0;
+    let cur_col = state.location.1;
 
     for &(dr, dc) in &ROOK_DELTAS {
         for offset in 1..8 {
-            let target_row = (cur_row + dr * offset) as usize;
-            let target_col = (cur_col + dc * offset) as usize;
+            let target_row = (cur_row as i32 + dr * offset) as usize;
+            let target_col = (cur_col as i32 + dc * offset) as usize;
 
             if !in_bounds(target_row, target_col) {
                 break;
             }
 
-            let previous_square = board.board[target_row - 1][target_col - 1];
-            if let Some(captured) = previous_square.piece_state {
+            let previous_square = board.board[cur_row - 1][cur_col - 1];
+            let target_square = board.board[target_row - 1][target_col - 1];
+            if let Some(captured) = target_square.piece_state {
                 if captured.color != state.color {
                     if let Some(mv) = create(
                         state,
@@ -659,20 +663,22 @@ pub fn get_queen_moves(state: PieceState, board: &Board) -> Vec<Move> {
     }
 
     let mut moves: Vec<Move> = vec![];
-    let cur_row: i32 = state.location.0 as i32;
-    let cur_col: i32 = state.location.1 as i32;
+    let cur_row = state.location.0;
+    let cur_col = state.location.1;
 
     for &(dr, dc) in &QUEEN_DELTAS {
         for offset in 1..8 {
-            let target_row = (cur_row + dr * offset) as usize;
-            let target_col = (cur_col + dc * offset) as usize;
+            let target_row = (cur_row as i32 + dr * offset) as usize;
+            let target_col = (cur_col as i32 + dc * offset) as usize;
 
             if !in_bounds(target_row, target_col) {
                 break;
             }
 
-            let previous_square = board.board[target_row - 1][target_col - 1];
-            if let Some(piece_state) = previous_square.piece_state {
+            let previous_square = board.board[cur_row - 1][cur_col - 1];
+            let target_square = board.board[target_row - 1][target_col - 1];
+
+            if let Some(piece_state) = target_square.piece_state {
                 if piece_state.color != state.color {
                     if let Some(mv) = create(
                         state,
@@ -721,19 +727,25 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
     }
 
     let mut moves: Vec<Move> = vec![];
-    let cur_row: i32 = state.location.0 as i32;
-    let cur_col: i32 = state.location.1 as i32;
+    let cur_row = state.location.0;
+    let cur_col = state.location.1;
 
     for &(row_offset, col_offset) in &KING_DELTAS {
-        let target_row = (cur_row + row_offset) as usize;
-        let target_col = (cur_col + col_offset) as usize;
+        let target_row = (cur_row as i32 + row_offset) as usize;
+        let target_col = (cur_col as i32 + col_offset) as usize;
 
         if !in_bounds(target_row, target_col) {
             break;
         }
 
-        let previous_square = board.board[target_row - 1][target_col - 1];
-        if let Some(captured) = previous_square.piece_state {
+        let previous_square = board.board[cur_row - 1][cur_col - 1];
+        let target_square = board.board[target_row - 1][target_col - 1];
+
+        if square_is_attacked(target_square, state.color, board) {
+            continue;
+        }
+        
+        if let Some(captured) = target_square.piece_state {
             if captured.color != state.color {
                 if let Some(mv) = create(
                     state,
@@ -772,8 +784,8 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
     }
 
     if !state.has_moved {
-        let previous_square = board.board[(cur_row - 1) as usize][(cur_col - 1) as usize];
-        if is_kingside_castling_valid(state, board, cur_row as usize) {
+        let previous_square = board.board[cur_row - 1][cur_col - 1];
+        if is_kingside_castling_valid(state, board, cur_row) {
             if let Some(mv) = create(
                 state,
                 previous_square,
