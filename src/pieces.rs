@@ -30,7 +30,7 @@ impl Piece {
                 Piece::Queen => 'Q'.to_string(),
                 Piece::King => 'K'.to_string(),
             },
-            Color::Black => match Self {
+            Color::Black => match self {
                 Piece::Pawn => 'p'.to_string(),
                 Piece::Rook => 'r'.to_string(),
                 Piece::Knight => 'n'.to_string(),
@@ -115,12 +115,17 @@ impl BoardState {
 
         for row in 6..8 {
             for col in 0..8 {
-                white_piece_states.push(PieceState {
-                    id: unique_id,
-                    piece_state: Some(START_BOARD.board[row][col]).piece_state,
-                    color: Color::White
-                });
-                unique_id += 1;
+                if let Some(state) = START_BOARD.board[row][col].piece_state {
+                    white_piece_states.push(PieceState {
+                        id: unique_id,
+                        color: Color::White,
+                        piece: state.piece,
+                        location: (row, col),
+                        has_moved: false,
+                        dead: false
+                    });
+                    unique_id += 1;
+                }
             }
         }
 
