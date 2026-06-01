@@ -148,8 +148,8 @@ pub fn create(
 
     if !mv.validate() {
         eprintln!(
-            "Warning: Piece {:?}, id {} failed validation",
-            state.piece, state.id
+            "Warning: PieceState {:?} failed validation",
+            state
         );
         return None;
     }
