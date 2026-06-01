@@ -47,17 +47,26 @@ const KING_DELTAS: [(i32, i32); 8] = [
     (0, -1)
 ];
 
+pub const EMPTY_MOVE: Move = Move {
+    previous_square: Square { row: 0, column: 0, piece_state: None },
+    current_square: Square { row: 0, column: 0, piece_state: None },
+    color: Color::White,
+    captured_piece: None,
+    promotion: None,
+    castling: false
+};
+
 // Previous square holds the previous state
 // otherwise every previous square would be empty
 // and thats not helpful
 #[derive(Debug, Clone, Copy)]
 pub struct Move {
-    previous_square: Square,
-    current_square: Square,
-    color: Color,
-    captured_piece: Option<PieceState>,
-    promotion: Option<Piece>,
-    castling: bool
+    pub previous_square: Square,
+    pub current_square: Square,
+    pub color: Color,
+    pub captured_piece: Option<PieceState>,
+    pub promotion: Option<Piece>,
+    pub castling: bool
 }
 
 impl Move {
