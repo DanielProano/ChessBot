@@ -95,3 +95,161 @@ impl MoveList {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pieces::*;
+
+    fn empty_board() -> Board {
+        EMPTY_BOARD
+    }
+
+    fn place_piece(board: &mut Board, row: usize, col: usize, piece: Piece, color: Color) {
+        board.board[row - 1][col - 1] = Square {
+            row,
+            column: col,
+            piece_state: Some(PieceState {
+                color,
+                piece,
+                location: (row, col),
+                has_moved: false,
+                dead: false,
+            }),
+        };
+    }
+
+    // ---- generate_moves ----
+
+    #[test]
+    fn test_generate_moves_empty_board() {
+        let board = empty_board();
+        let mut move_list = MoveList::new();
+        move_list.generate_moves(&board, Color::White);
+        assert_eq!(move_list.move_count, 0);
+    }
+
+    #[test]
+    fn test_generate_moves_only_generates_for_active_color() {
+        let mut board = empty_board();
+        place_piece(&mut board, 2, 1, Piece::Pawn, Color::White);
+        place_piece(&mut board, 7, 1, Piece::Pawn, Color::Black);
+
+        let mut white_moves = MoveList::new();
+        white_moves.generate_moves(&board, Color::White);
+
+        let mut black_moves = MoveList::new();
+        black_moves.generate_moves(&board, Color::Black);
+
+        // white should not generate black's moves and vice versa
+        assert!(white_moves.move_count > 0);
+        assert!(black_moves.move_count > 0);
+        assert_eq!(white_moves.move_count, black_moves.move_count);
+    }
+
+    #[test]
+    fn test_starting_position_white_has_20_moves() {
+        // in the starting position white has exactly 20 legal moves
+        // (16 pawn moves + 4 knight moves)
+        let mut move_list = MoveList::new();
+        move_list.generate_moves(&START_BOARD, Color::White);
+        assert_eq!(move_list.move_count, 20);
+    }
+
+    #[test]
+    fn test_starting_position_black_has_20_moves() {
+        let mut move_list = MoveList::new();
+        move_list.generate_moves(&START_BOARD, Color::Black);
+        assert_eq!(move_list.move_count, 20);
+    }
+
+    // ---- score_moves ----
+
+    #[test]
+    fn test_score_moves_capture_scores_higher() {
+        let mut board = empty_board();
+        // white pawn can either move forward or capture a black piece
+        place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
+        place_piece(&mut board, 3, 5, Piece::Queen, Color::Black); // capturable queen
+
+        let mut move_list = MoveList::new();
+        move_list.generate_moves(&board, Color::White);
+        move_list.score_moves(&board);
+
+        // at least one score should be positive (capturing the queen)
+        let max_score = move_list.score[..move_list.move_count].iter().copied().max().unwrap();
+        assert!(max_score > 0, "capturing a queen should produce a positive score");
+    }
+
+    #[test]
+    fn test_score_moves_fills_score_array() {
+        let mut move_list = MoveList::new();
+        move_list.generate_moves(&START_BOARD, Color::White);
+        move_list.score_moves(&START_BOARD);
+
+        // all scores should be filled (not left at 0 from initialization)
+        // in starting position all moves are quiet so scores should be equal
+        let first_score = move_list.score[0];
+        for i in 0..move_list.move_count {
+            assert_eq!(move_list.score[i], first_score,
+                "all quiet moves from starting position should score equally");
+        }
+    }
+
+    // ---- order_moves ----
+
+    #[test]
+    fn test_order_moves_descending() {
+        let mut board = empty_board();
+        place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
+        place_piece(&mut board, 3, 5, Piece::Queen, Color::Black);
+
+        let mut move_list = MoveList::new();
+        move_list.generate_moves(&board, Color::White);
+        move_list.score_moves(&board);
+        move_list.order_moves();
+
+        // scores should be in descending order
+        for i in 0..move_list.move_count.saturating_sub(1) {
+            assert!(
+                move_list.score[i] >= move_list.score[i + 1],
+                "moves should be ordered highest score first"
+            );
+        }
+    }
+
+    #[test]
+    fn test_order_moves_capture_first() {
+        let mut board = empty_board();
+        place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
+        place_piece(&mut board, 3, 5, Piece::Queen, Color::Black);
+
+        let mut move_list = MoveList::new();
+        move_list.generate_moves(&board, Color::White);
+        move_list.score_moves(&board);
+        move_list.order_moves();
+
+        // the first move should be the capture (highest score)
+        let first_move = move_list.moves[0];
+        assert!(
+            first_move.captured_piece.is_some(),
+            "capture should be ordered first"
+        );
+    }
+
+    // ---- push / extend ----
+
+    #[test]
+    fn test_push_increments_count() {
+        let mut move_list = MoveList::new();
+        assert_eq!(move_list.move_count, 0);
+        move_list.generate_moves(&START_BOARD, Color::White);
+        assert!(move_list.move_count > 0);
+    }
+
+    #[test]
+    fn test_new_move_list_is_empty() {
+        let move_list = MoveList::new();
+        assert_eq!(move_list.move_count, 0);
+    }
+}

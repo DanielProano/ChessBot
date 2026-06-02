@@ -88,7 +88,7 @@ impl Move {
         else if self.previous_square == self.current_square {
             return false;
         } 
-        else if self.previous_square.piece_state != None {
+        else if self.previous_square.piece_state == None {
             return false;
         } 
         else if self.current_square.piece_state == None {
@@ -160,6 +160,8 @@ pub fn in_bounds(row: usize, col: usize) -> bool {
     if row <= 8 && row >= 1 && col <= 8 && col >= 1 {
         return true;
     }
+
+    println!("row {}, col {}", row, col);
 
     return false;
 }
@@ -744,7 +746,7 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
         let target_col = (cur_col as i32 + col_offset) as usize;
 
         if !in_bounds(target_row, target_col) {
-            break;
+            continue;
         }
 
         let previous_square = board.board[cur_row - 1][cur_col - 1];
@@ -835,21 +837,366 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
 }
 
 fn is_kingside_castling_valid(king: PieceState, board: &Board, row: usize) -> bool {
-    if let Some(rook) = board.board[row][8].piece_state {
-        if rook.piece == Piece::Rook && rook.color == king.color && !rook.has_moved {
-            return board.board[row][6].piece_state.is_none() && board.board[row][7].piece_state.is_none();
+    if let Some(rook) = board.board[row - 1][7].piece_state {
+        if rook.piece == Piece::Rook && rook.color == king.color && !rook.has_moved && !king.has_moved {
+            return board.board[row - 1][6].piece_state.is_none() 
+                && board.board[row - 1][7].piece_state.is_none();
         }
     }
     false
 }
 
 fn is_queenside_castling_valid(king: PieceState, board: &Board, row: usize) -> bool {
-    if let Some(rook) = board.board[row][1].piece_state {
-        if rook.piece == Piece::Rook && rook.color == king.color && !rook.has_moved {
-            return board.board[row][2].piece_state.is_none()
-                && board.board[row][3].piece_state.is_none()
-                && board.board[row][4].piece_state.is_none();
+    if let Some(rook) = board.board[row - 1][0].piece_state {
+        if rook.piece == Piece::Rook && rook.color == king.color && !rook.has_moved && !king.has_moved {
+            return board.board[row - 1][2].piece_state.is_none()
+                && board.board[row - 1][3].piece_state.is_none()
+                && board.board[row - 1][4].piece_state.is_none();
         }
     }
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pieces::*;
+
+    fn empty_board() -> Board {
+        EMPTY_BOARD
+    }
+
+    fn place_piece(board: &mut Board, row: usize, col: usize, piece: Piece, color: Color) {
+        board.board[row - 1][col - 1] = Square {
+            row,
+            column: col,
+            piece_state: Some(PieceState {
+                color,
+                piece,
+                location: (row, col),
+                has_moved: false,
+                dead: false,
+            }),
+        };
+    }
+
+    // ---- validate ----
+
+    #[test]
+    fn test_validate_rejects_out_of_bounds() {
+        let mv = Move {
+            previous_square: Square { row: 0, column: 1, piece_state: Some(PieceState {
+                color: Color::White, piece: Piece::Pawn, location: (0, 1), has_moved: false, dead: false
+            })},
+            current_square: Square { row: 1, column: 1, piece_state: Some(PieceState {
+                color: Color::White, piece: Piece::Pawn, location: (1, 1), has_moved: false, dead: false
+            })},
+            color: Color::White,
+            captured_piece: None,
+            promotion: None,
+            castling: false,
+        };
+        assert!(!mv.validate());
+    }
+
+    #[test]
+    fn test_validate_rejects_same_square() {
+        let square = Square { row: 4, column: 4, piece_state: Some(PieceState {
+            color: Color::White, piece: Piece::Pawn, location: (4, 4), has_moved: false, dead: false
+        })};
+        let mv = Move {
+            previous_square: square,
+            current_square: square,
+            color: Color::White,
+            captured_piece: None,
+            promotion: None,
+            castling: false,
+        };
+        assert!(!mv.validate());
+    }
+
+    #[test]
+    fn test_validate_rejects_missing_piece_on_origin() {
+        let mv = Move {
+            previous_square: Square { row: 2, column: 1, piece_state: None },
+            current_square: Square { row: 3, column: 1, piece_state: Some(PieceState {
+                color: Color::White, piece: Piece::Pawn, location: (3, 1), has_moved: true, dead: false
+            })},
+            color: Color::White,
+            captured_piece: None,
+            promotion: None,
+            castling: false,
+        };
+        assert!(!mv.validate());
+    }
+
+    // ---- white pawn moves ----
+
+    #[test]
+    fn test_white_pawn_single_push() {
+        let mut board = empty_board();
+        place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
+        let state = board.board[1][3].piece_state.unwrap();
+        let moves = get_white_pawn_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 3 && m.current_square.column == 4));
+    }
+
+    #[test]
+    fn test_white_pawn_double_push_from_rank_2() {
+        let mut board = empty_board();
+        place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
+        let state = board.board[1][3].piece_state.unwrap();
+        let moves = get_white_pawn_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 4 && m.current_square.column == 4));
+    }
+
+    #[test]
+    fn test_white_pawn_blocked() {
+        let mut board = empty_board();
+        place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
+        place_piece(&mut board, 3, 4, Piece::Pawn, Color::Black);
+        let state = board.board[1][3].piece_state.unwrap();
+        let moves = get_white_pawn_moves(state, &board);
+        assert!(moves.is_empty());
+    }
+
+    #[test]
+    fn test_white_pawn_capture() {
+        let mut board = empty_board();
+        place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
+        place_piece(&mut board, 3, 5, Piece::Pawn, Color::Black);
+        let state = board.board[1][3].piece_state.unwrap();
+        let moves = get_white_pawn_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 3 && m.current_square.column == 5 && m.captured_piece.is_some()));
+    }
+
+    #[test]
+    fn test_white_pawn_promotion() {
+        let mut board = empty_board();
+        place_piece(&mut board, 7, 4, Piece::Pawn, Color::White);
+        let state = board.board[6][3].piece_state.unwrap();
+        let moves = get_white_pawn_moves(state, &board);
+        // should generate 4 promotion moves
+        assert_eq!(moves.iter().filter(|m| m.promotion.is_some()).count(), 4);
+    }
+
+    // ---- black pawn moves ----
+
+    #[test]
+    fn test_black_pawn_single_push() {
+        let mut board = empty_board();
+        place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
+        let state = board.board[6][3].piece_state.unwrap();
+        let moves = get_black_pawn_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 6 && m.current_square.column == 4));
+    }
+
+    #[test]
+    fn test_black_pawn_double_push_from_rank_7() {
+        let mut board = empty_board();
+        place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
+        let state = board.board[6][3].piece_state.unwrap();
+        let moves = get_black_pawn_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 5 && m.current_square.column == 4));
+    }
+
+    #[test]
+    fn test_black_pawn_capture() {
+        let mut board = empty_board();
+        place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
+        place_piece(&mut board, 6, 5, Piece::Pawn, Color::White);
+        let state = board.board[6][3].piece_state.unwrap();
+        let moves = get_black_pawn_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 6 && m.current_square.column == 5 && m.captured_piece.is_some()));
+    }
+
+    // ---- knight moves ----
+
+    #[test]
+    fn test_knight_moves_from_center() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Knight, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_knight_moves(state, &board);
+        assert_eq!(moves.len(), 8);
+    }
+
+    #[test]
+    fn test_knight_moves_from_corner() {
+        let mut board = empty_board();
+        place_piece(&mut board, 1, 1, Piece::Knight, Color::White);
+        let state = board.board[0][0].piece_state.unwrap();
+        let moves = get_knight_moves(state, &board);
+        assert_eq!(moves.len(), 2);
+    }
+
+    #[test]
+    fn test_knight_cannot_capture_own_piece() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Knight, Color::White);
+        place_piece(&mut board, 6, 5, Piece::Pawn, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_knight_moves(state, &board);
+        assert!(moves.iter().all(|m| !(m.current_square.row == 6 && m.current_square.column == 5)));
+    }
+
+    #[test]
+    fn test_knight_can_capture_enemy() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Knight, Color::White);
+        place_piece(&mut board, 6, 5, Piece::Pawn, Color::Black);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_knight_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 6 && m.current_square.column == 5 && m.captured_piece.is_some()));
+    }
+
+    // ---- bishop moves ----
+
+    #[test]
+    fn test_bishop_moves_open_board() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Bishop, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_bishop_moves(state, &board);
+        assert_eq!(moves.len(), 13);
+    }
+
+    #[test]
+    fn test_bishop_blocked_by_own_piece() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Bishop, Color::White);
+        place_piece(&mut board, 5, 5, Piece::Pawn, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_bishop_moves(state, &board);
+        assert!(moves.iter().all(|m| !(m.current_square.row == 5 && m.current_square.column == 5)));
+    }
+
+    #[test]
+    fn test_bishop_captures_enemy_and_stops() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Bishop, Color::White);
+        place_piece(&mut board, 6, 6, Piece::Pawn, Color::Black);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_bishop_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 6 && m.current_square.column == 6 && m.captured_piece.is_some()));
+        assert!(moves.iter().all(|m| !(m.current_square.row == 7 && m.current_square.column == 7)));
+    }
+
+    // ---- rook moves ----
+
+    #[test]
+    fn test_rook_moves_open_board() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Rook, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_rook_moves(state, &board);
+        assert_eq!(moves.len(), 14);
+    }
+
+    #[test]
+    fn test_rook_blocked_by_own_piece() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Rook, Color::White);
+        place_piece(&mut board, 4, 6, Piece::Pawn, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_rook_moves(state, &board);
+        assert!(moves.iter().all(|m| m.current_square.column < 6 || m.current_square.row != 4));
+    }
+
+    #[test]
+    fn test_rook_captures_enemy_and_stops() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Rook, Color::White);
+        place_piece(&mut board, 4, 6, Piece::Pawn, Color::Black);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_rook_moves(state, &board);
+        assert!(moves.iter().any(|m| m.current_square.row == 4 && m.current_square.column == 6 && m.captured_piece.is_some()));
+        assert!(moves.iter().all(|m| !(m.current_square.row == 4 && m.current_square.column == 7)));
+    }
+
+    // ---- queen moves ----
+
+    #[test]
+    fn test_queen_moves_open_board() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Queen, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_queen_moves(state, &board);
+        assert_eq!(moves.len(), 27);
+    }
+
+    #[test]
+    fn test_queen_combines_rook_and_bishop() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Queen, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_queen_moves(state, &board);
+        // can reach same squares as rook + bishop from center
+        assert!(moves.iter().any(|m| m.current_square.row == 4 && m.current_square.column == 8)); // rook direction
+        assert!(moves.iter().any(|m| m.current_square.row == 7 && m.current_square.column == 7)); // bishop direction
+    }
+
+    // ---- king moves ----
+
+    #[test]
+    fn test_king_moves_from_center() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::King, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_king_moves(state, &board);
+        assert_eq!(moves.len(), 8);
+    }
+
+    #[test]
+    fn test_king_cannot_capture_own_piece() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::King, Color::White);
+        place_piece(&mut board, 5, 5, Piece::Pawn, Color::White);
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_king_moves(state, &board);
+        assert!(moves.iter().all(|m| !(m.current_square.row == 5 && m.current_square.column == 5)));
+    }
+
+    #[test]
+    fn test_king_moves_from_corner() {
+        let mut board = empty_board();
+        place_piece(&mut board, 1, 1, Piece::King, Color::White);
+        let state = board.board[0][0].piece_state.unwrap();
+        let moves = get_king_moves(state, &board);
+        assert_eq!(moves.len(), 3);
+    }
+
+    // ---- square_is_attacked ----
+
+    #[test]
+    fn test_square_attacked_by_knight() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Knight, Color::Black);
+        let square = Square { row: 2, column: 3, piece_state: None };
+        assert!(square_is_attacked(square, Color::White, &board));
+    }
+
+    #[test]
+    fn test_square_not_attacked() {
+        let mut board = empty_board();
+        place_piece(&mut board, 1, 1, Piece::Rook, Color::Black);
+        let square = Square { row: 4, column: 4, piece_state: None };
+        assert!(!square_is_attacked(square, Color::White, &board));
+    }
+
+    #[test]
+    fn test_square_attacked_by_rook() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 1, Piece::Rook, Color::Black);
+        let square = Square { row: 4, column: 5, piece_state: None };
+        assert!(square_is_attacked(square, Color::White, &board));
+    }
+
+    #[test]
+    fn test_square_attacked_by_bishop() {
+        let mut board = empty_board();
+        place_piece(&mut board, 1, 1, Piece::Bishop, Color::Black);
+        let square = Square { row: 4, column: 4, piece_state: None };
+        assert!(square_is_attacked(square, Color::White, &board));
+    }
 }

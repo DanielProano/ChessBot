@@ -49,14 +49,14 @@ const BISHOP_MAP: [i32; 64] = [
 ];
 
 const KNIGHT_MAP: [i32; 64] = [
-    -1, -1, 0, -1, -1, 0, -1, -1,
+    -2, -1, 0, -1, -1, 0, -1, -2,
     -2, 2, 1, 1, 1, 1, 2, -2,
     -2, 0, 2, 1, 1, 2, 0, -2,
     -2, 1, 1, 3, 3, 1, 1, -2,
     -2, 1, 1, 3, 3, 1, 1, -2,
     -2, 0, 2, 1, 1, 2, 0, -2,
-    -2, 2, 1, 0, 0, 1, 2, -2,
-    -2, 0, -1, -1, -1, 0, -1, -2,
+    -2, 2, 1, 1, 1, 1, 2, -2,
+    -2, -1, 0, -1, -1, 0, -1, -2,
 ];
 
 const QUEEN_MAP: [i32; 64] = [
@@ -98,7 +98,7 @@ pub fn calculate_material(board: &Board) -> i32 {
     
     for row in 1..=8 {
         for col in 1..=8 {
-            if let Some(piece_state) = board.board[row][col].piece_state {
+            if let Some(piece_state) = board.board[row - 1][col - 1].piece_state {
                 let index = (8 - row) * 8 + (col - 1);
                 let material = get_piece_value(piece_state.piece);
                 let position = get_position_bonus(piece_state, index, phase);
@@ -117,7 +117,7 @@ fn evaluate_phase(board: &Board) -> GamePhase {
     
     for row in 1..=8 {
         for col in 1..=8 {
-            if let Some(state) = board.board[row][col].piece_state {
+            if let Some(state) = board.board[row - 1][col - 1].piece_state {
                 material += match state.piece {
                     Piece::Pawn => 1,
                     Piece::Knight | Piece::Bishop => 3,
@@ -163,5 +163,122 @@ fn get_position_bonus(piece_state: PieceState, index: usize, phase: GamePhase) -
                 _ => KING_MAP[index]
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pieces::*;
+
+    fn empty_board() -> Board {
+        EMPTY_BOARD
+    }
+
+    fn place_piece(board: &mut Board, row: usize, col: usize, piece: Piece, color: Color) {
+        board.board[row - 1][col - 1].piece_state = Some(PieceState {
+            color,
+            piece,
+            location: (row, col),
+            has_moved: false,
+            dead: false,
+        });
+    }
+
+    // ---- get_piece_value ----
+
+    #[test]
+    fn test_pawn_value() {
+        assert_eq!(get_piece_value(Piece::Pawn), 1);
+    }
+
+    #[test]
+    fn test_queen_value() {
+        assert_eq!(get_piece_value(Piece::Queen), 9);
+    }
+
+    #[test]
+    fn test_king_value() {
+        assert_eq!(get_piece_value(Piece::King), 0);
+    }
+
+    // ---- evaluate_phase ----
+
+    #[test]
+    fn test_opening_phase() {
+        // START_BOARD has full material, should be Opening
+        let phase = evaluate_phase(&START_BOARD);
+        assert!(matches!(phase, GamePhase::Opening));
+    }
+
+    #[test]
+    fn test_endgame_phase() {
+        // just two kings on the board = very low material
+        let mut board = empty_board();
+        place_piece(&mut board, 1, 5, Piece::King, Color::White);
+        place_piece(&mut board, 8, 5, Piece::King, Color::Black);
+        let phase = evaluate_phase(&board);
+        assert!(matches!(phase, GamePhase::Endgame));
+    }
+
+    #[test]
+    fn test_middlegame_phase() {
+        let mut board = empty_board();
+        place_piece(&mut board, 1, 5, Piece::King, Color::White);
+        place_piece(&mut board, 8, 5, Piece::King, Color::Black);
+        place_piece(&mut board, 1, 1, Piece::Rook, Color::White);
+        place_piece(&mut board, 1, 2, Piece::Rook, Color::White);
+        place_piece(&mut board, 8, 1, Piece::Rook, Color::Black);
+        place_piece(&mut board, 8, 2, Piece::Rook, Color::Black);
+        // 4 rooks = 20 material, should be Middlegame
+        let phase = evaluate_phase(&board);
+        assert!(matches!(phase, GamePhase::Middlegame));
+    }
+
+    // ---- calculate_material ----
+
+    #[test]
+    fn test_empty_board_score_is_zero() {
+        assert_eq!(calculate_material(&empty_board()), 0);
+    }
+
+    #[test]
+    fn test_equal_material_near_zero() {
+        // one white queen vs one black queen, same square index = score of 0
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Queen, Color::White);
+        place_piece(&mut board, 5, 4, Piece::Queen, Color::Black);
+        // material cancels out; position bonuses may differ slightly but score near 0
+        let score = calculate_material(&board);
+        // both queens present so white and black cancel on material (9 - 9 = 0)
+        // just assert it's in a reasonable range
+        assert!(score.abs() < 10);
+    }
+
+    #[test]
+    fn test_white_up_a_queen() {
+        let mut board = empty_board();
+        place_piece(&mut board, 1, 5, Piece::King, Color::White);
+        place_piece(&mut board, 8, 5, Piece::King, Color::Black);
+        place_piece(&mut board, 4, 4, Piece::Queen, Color::White);
+        let score = calculate_material(&board);
+        assert!(score > 0, "white is up material, score should be positive");
+    }
+
+    #[test]
+    fn test_black_up_a_rook() {
+        let mut board = empty_board();
+        place_piece(&mut board, 1, 5, Piece::King, Color::White);
+        place_piece(&mut board, 8, 5, Piece::King, Color::Black);
+        place_piece(&mut board, 4, 1, Piece::Rook, Color::Black);
+        let score = calculate_material(&board);
+        assert!(score < 0, "black is up material, score should be negative");
+    }
+
+    #[test]
+    fn test_starting_position_is_balanced() {
+        // starting position is perfectly symmetric, score should be 0
+        println!("{}", calculate_material(&START_BOARD));
+        assert_eq!(calculate_material(&START_BOARD), 0);
     }
 }

@@ -1,5 +1,6 @@
-use crate::moves::*;
 use wasm_bindgen::prelude::*;
+
+use crate::fen::*;
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,26 +46,26 @@ impl Piece {
 // Only tracks whether rooks or kings have moved
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CastlingRights {
-    castle_kingside: bool,
-    castle_queenside: bool,
+    pub castle_kingside: bool,
+    pub castle_queenside: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnPassant {
-    target: Square,
+    pub target: Square,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DrawConditions {
-    draw: bool,
-    fifty_move_counter: usize,
-    threefold_counter: usize,
+    pub draw: bool,
+    pub fifty_move_counter: usize,
+    pub threefold_counter: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Time {
-    alloted_time: u32,
-    cur_time: u32,
+    pub alloted_time: u32,
+    pub cur_time: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -173,71 +174,19 @@ impl BoardState {
             time: None,
         }
     }
-
-    fn update(fen: FEN) {}
 }
 
 pub static START_BOARD: Board = Board {
     board: [
         [
-            Square { row: 8, column: 1, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Rook, location: (8, 1), has_moved: false, dead: false }) },
-            Square { row: 8, column: 2, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Knight, location: (8, 2), has_moved: false, dead: false}) },
-            Square { row: 8, column: 3, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Bishop, location: (8, 3), has_moved: false, dead: false }) },
-            Square { row: 8, column: 4, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Queen, location: (8, 4), has_moved: false, dead: false }) },
-            Square { row: 8, column: 5, piece_state: Some(PieceState {color: Color::Black, piece: Piece::King, location: (8, 5), has_moved: false, dead: false }) },
-            Square { row: 8, column: 6, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Bishop, location: (8, 6), has_moved: false, dead: false }) },
-            Square { row: 8, column: 7, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Knight, location: (8, 7), has_moved: false, dead: false }) },
-            Square { row: 8, column: 8, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Rook, location: (8, 8), has_moved: false, dead: false }) },
-        ],
-        [
-            Square { row: 7, column: 1, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 1), has_moved: false, dead: false }) },
-            Square { row: 7, column: 2, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 2), has_moved: false, dead: false}) },
-            Square { row: 7, column: 3, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 3), has_moved: false, dead: false }) },
-            Square { row: 7, column: 4, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 4), has_moved: false, dead: false }) },
-            Square { row: 7, column: 5, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 5), has_moved: false, dead: false }) },
-            Square { row: 7, column: 6, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 6), has_moved: false, dead: false }) },
-            Square { row: 7, column: 7, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 7), has_moved: false, dead: false }) },
-            Square { row: 7, column: 8, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 8), has_moved: false, dead: false }) },
-        ],
-        [
-            Square { row: 6, column: 1, piece_state: None },
-            Square { row: 6, column: 2, piece_state: None },
-            Square { row: 6, column: 3, piece_state: None },
-            Square { row: 6, column: 4, piece_state: None },
-            Square { row: 6, column: 5, piece_state: None },
-            Square { row: 6, column: 6, piece_state: None },
-            Square { row: 6, column: 7, piece_state: None },
-            Square { row: 6, column: 8, piece_state: None },
-        ],
-        [
-            Square { row: 5, column: 1, piece_state: None },
-            Square { row: 5, column: 2, piece_state: None },
-            Square { row: 5, column: 3, piece_state: None },
-            Square { row: 5, column: 4, piece_state: None },
-            Square { row: 5, column: 5, piece_state: None },
-            Square { row: 5, column: 6, piece_state: None },
-            Square { row: 5, column: 7, piece_state: None },
-            Square { row: 5, column: 8, piece_state: None },
-        ],
-        [
-            Square { row: 4, column: 1, piece_state: None },
-            Square { row: 4, column: 2, piece_state: None },
-            Square { row: 4, column: 3, piece_state: None },
-            Square { row: 4, column: 4, piece_state: None },
-            Square { row: 4, column: 5, piece_state: None },
-            Square { row: 4, column: 6, piece_state: None },
-            Square { row: 4, column: 7, piece_state: None },
-            Square { row: 4, column: 8, piece_state: None },
-        ],
-        [
-            Square { row: 3, column: 1, piece_state: None },
-            Square { row: 3, column: 2, piece_state: None },
-            Square { row: 3, column: 3, piece_state: None },
-            Square { row: 3, column: 4, piece_state: None },
-            Square { row: 3, column: 5, piece_state: None },
-            Square { row: 3, column: 6, piece_state: None },
-            Square { row: 3, column: 7, piece_state: None },
-            Square { row: 3, column: 8, piece_state: None },
+            Square { row: 1, column: 1, piece_state: Some(PieceState {color: Color::White, piece: Piece::Rook, location: (1, 1), has_moved: false, dead: false  }) },
+            Square { row: 1, column: 2, piece_state: Some(PieceState {color: Color::White, piece: Piece::Knight, location: (1, 2), has_moved: false, dead: false  }) },
+            Square { row: 1, column: 3, piece_state: Some(PieceState {color: Color::White, piece: Piece::Bishop, location: (1, 3), has_moved: false, dead: false  }) },
+            Square { row: 1, column: 4, piece_state: Some(PieceState {color: Color::White, piece: Piece::Queen, location: (1, 4), has_moved: false, dead: false  }) },
+            Square { row: 1, column: 5, piece_state: Some(PieceState {color: Color::White, piece: Piece::King, location: (1, 5), has_moved: false, dead: false  }) },
+            Square { row: 1, column: 6, piece_state: Some(PieceState {color: Color::White, piece: Piece::Bishop, location: (1, 6), has_moved: false, dead: false  }) },
+            Square { row: 1, column: 7, piece_state: Some(PieceState {color: Color::White, piece: Piece::Knight, location: (1, 7), has_moved: false, dead: false  }) },
+            Square { row: 1, column: 8, piece_state: Some(PieceState {color: Color::White, piece: Piece::Rook, location: (1, 8), has_moved: false, dead: false  }) },
         ],
         [
             Square { row: 2, column: 1, piece_state: Some(PieceState {color: Color::White, piece: Piece::Pawn, location: (2, 1), has_moved: false, dead: false }) },
@@ -250,14 +199,64 @@ pub static START_BOARD: Board = Board {
             Square { row: 2, column: 8, piece_state: Some(PieceState {color: Color::White, piece: Piece::Pawn, location: (2, 8), has_moved: false, dead: false }) },
         ],
         [
-            Square { row: 1, column: 1, piece_state: Some(PieceState {color: Color::White, piece: Piece::Rook, location: (1, 1), has_moved: false, dead: false  }) },
-            Square { row: 1, column: 2, piece_state: Some(PieceState {color: Color::White, piece: Piece::Knight, location: (1, 2), has_moved: false, dead: false  }) },
-            Square { row: 1, column: 3, piece_state: Some(PieceState {color: Color::White, piece: Piece::Bishop, location: (1, 3), has_moved: false, dead: false  }) },
-            Square { row: 1, column: 4, piece_state: Some(PieceState {color: Color::White, piece: Piece::Queen, location: (1, 4), has_moved: false, dead: false  }) },
-            Square { row: 1, column: 5, piece_state: Some(PieceState {color: Color::White, piece: Piece::King, location: (1, 5), has_moved: false, dead: false  }) },
-            Square { row: 1, column: 6, piece_state: Some(PieceState {color: Color::White, piece: Piece::Bishop, location: (1, 6), has_moved: false, dead: false  }) },
-            Square { row: 1, column: 7, piece_state: Some(PieceState {color: Color::White, piece: Piece::Knight, location: (1, 7), has_moved: false, dead: false  }) },
-            Square { row: 1, column: 8, piece_state: Some(PieceState {color: Color::White, piece: Piece::Rook, location: (1, 8), has_moved: false, dead: false  }) },
+            Square { row: 3, column: 1, piece_state: None },
+            Square { row: 3, column: 2, piece_state: None },
+            Square { row: 3, column: 3, piece_state: None },
+            Square { row: 3, column: 4, piece_state: None },
+            Square { row: 3, column: 5, piece_state: None },
+            Square { row: 3, column: 6, piece_state: None },
+            Square { row: 3, column: 7, piece_state: None },
+            Square { row: 3, column: 8, piece_state: None },
+        ],
+        [
+            Square { row: 4, column: 1, piece_state: None },
+            Square { row: 4, column: 2, piece_state: None },
+            Square { row: 4, column: 3, piece_state: None },
+            Square { row: 4, column: 4, piece_state: None },
+            Square { row: 4, column: 5, piece_state: None },
+            Square { row: 4, column: 6, piece_state: None },
+            Square { row: 4, column: 7, piece_state: None },
+            Square { row: 4, column: 8, piece_state: None },
+        ],
+        [
+            Square { row: 5, column: 1, piece_state: None },
+            Square { row: 5, column: 2, piece_state: None },
+            Square { row: 5, column: 3, piece_state: None },
+            Square { row: 5, column: 4, piece_state: None },
+            Square { row: 5, column: 5, piece_state: None },
+            Square { row: 5, column: 6, piece_state: None },
+            Square { row: 5, column: 7, piece_state: None },
+            Square { row: 5, column: 8, piece_state: None },
+        ],
+        [
+            Square { row: 6, column: 1, piece_state: None },
+            Square { row: 6, column: 2, piece_state: None },
+            Square { row: 6, column: 3, piece_state: None },
+            Square { row: 6, column: 4, piece_state: None },
+            Square { row: 6, column: 5, piece_state: None },
+            Square { row: 6, column: 6, piece_state: None },
+            Square { row: 6, column: 7, piece_state: None },
+            Square { row: 6, column: 8, piece_state: None },
+        ],
+        [
+            Square { row: 7, column: 1, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 1), has_moved: false, dead: false }) },
+            Square { row: 7, column: 2, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 2), has_moved: false, dead: false}) },
+            Square { row: 7, column: 3, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 3), has_moved: false, dead: false }) },
+            Square { row: 7, column: 4, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 4), has_moved: false, dead: false }) },
+            Square { row: 7, column: 5, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 5), has_moved: false, dead: false }) },
+            Square { row: 7, column: 6, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 6), has_moved: false, dead: false }) },
+            Square { row: 7, column: 7, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 7), has_moved: false, dead: false }) },
+            Square { row: 7, column: 8, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (7, 8), has_moved: false, dead: false }) },
+        ],
+        [
+            Square { row: 8, column: 1, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Rook, location: (8, 1), has_moved: false, dead: false }) },
+            Square { row: 8, column: 2, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Knight, location: (8, 2), has_moved: false, dead: false}) },
+            Square { row: 8, column: 3, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Bishop, location: (8, 3), has_moved: false, dead: false }) },
+            Square { row: 8, column: 4, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Queen, location: (8, 4), has_moved: false, dead: false }) },
+            Square { row: 8, column: 5, piece_state: Some(PieceState {color: Color::Black, piece: Piece::King, location: (8, 5), has_moved: false, dead: false }) },
+            Square { row: 8, column: 6, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Bishop, location: (8, 6), has_moved: false, dead: false }) },
+            Square { row: 8, column: 7, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Knight, location: (8, 7), has_moved: false, dead: false }) },
+            Square { row: 8, column: 8, piece_state: Some(PieceState {color: Color::Black, piece: Piece::Rook, location: (8, 8), has_moved: false, dead: false }) },
         ],
     ],
 };
@@ -348,245 +347,186 @@ pub static EMPTY_BOARD: Board = Board {
     ]
 };
 
-pub fn simple_algebraic_to_grid(notation: &str) -> Option<EnPassant> {
-    let mut square = Square {
-        row: 0,
-        column: 0,
-        piece_state: None,
-    };
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    if notation.chars().next() == Some('-') {
-        return None;
+    // ---- START_BOARD structure ----
+
+    #[test]
+    fn test_start_board_white_back_rank() {
+        let back_rank = [
+            Piece::Rook, Piece::Knight, Piece::Bishop, Piece::Queen,
+            Piece::King, Piece::Bishop, Piece::Knight, Piece::Rook,
+        ];
+        for (col, &piece) in back_rank.iter().enumerate() {
+            let sq = START_BOARD.board[0][col];
+            let state = sq.piece_state.expect("back rank should be occupied");
+            assert_eq!(state.color, Color::White, "col {} should be white", col);
+            assert_eq!(state.piece, piece, "col {} piece mismatch", col);
+            assert_eq!(sq.row, 1);
+            assert_eq!(sq.column, col + 1);
+        }
     }
 
-    if notation.len() != 2 {
-        panic!("Invalid algebraic length");
+    #[test]
+    fn test_start_board_black_back_rank() {
+        let back_rank = [
+            Piece::Rook, Piece::Knight, Piece::Bishop, Piece::Queen,
+            Piece::King, Piece::Bishop, Piece::Knight, Piece::Rook,
+        ];
+        for (col, &piece) in back_rank.iter().enumerate() {
+            let sq = START_BOARD.board[7][col];
+            let state = sq.piece_state.expect("back rank should be occupied");
+            assert_eq!(state.color, Color::Black, "col {} should be black", col);
+            assert_eq!(state.piece, piece, "col {} piece mismatch", col);
+            assert_eq!(sq.row, 8);
+            assert_eq!(sq.column, col + 1);
+        }
     }
 
-    for char in notation.chars() {
-        if char.is_alphabetic() {
-            match char {
-                'a' => square.column = 1,
-                'b' => square.column = 2,
-                'c' => square.column = 3,
-                'd' => square.column = 4,
-                'e' => square.column = 5,
-                'f' => square.column = 6,
-                'g' => square.column = 7,
-                'h' => square.column = 8,
-                _ => panic!("Invalid algebraic syntax"),
+    #[test]
+    fn test_start_board_white_pawns() {
+        for col in 0..8 {
+            let sq = START_BOARD.board[1][col];
+            let state = sq.piece_state.expect("pawn rank should be occupied");
+            assert_eq!(state.color, Color::White);
+            assert_eq!(state.piece, Piece::Pawn);
+            assert_eq!(sq.row, 2);
+            assert_eq!(sq.column, col + 1);
+        }
+    }
+
+    #[test]
+    fn test_start_board_black_pawns() {
+        for col in 0..8 {
+            let sq = START_BOARD.board[6][col];
+            let state = sq.piece_state.expect("pawn rank should be occupied");
+            assert_eq!(state.color, Color::Black);
+            assert_eq!(state.piece, Piece::Pawn);
+            assert_eq!(sq.row, 7);
+            assert_eq!(sq.column, col + 1);
+        }
+    }
+
+    #[test]
+    fn test_start_board_middle_ranks_empty() {
+        for row in 2..6 {
+            for col in 0..8 {
+                assert!(
+                    START_BOARD.board[row][col].piece_state.is_none(),
+                    "row {} col {} should be empty", row, col
+                );
             }
-        } else if char.is_numeric() {
-            match char {
-                '1' => square.row = 1,
-                '2' => square.row = 2,
-                '3' => square.row = 3,
-                '4' => square.row = 4,
-                '5' => square.row = 5,
-                '6' => square.row = 6,
-                '7' => square.row = 7,
-                '8' => square.row = 8,
-                _ => panic!("Invalid algebraic syntax"),
-            }
-        } else {
-            panic!("Invalid algebraic syntax")
         }
     }
 
-    Some(EnPassant { target: square })
-}
-
-#[wasm_bindgen]
-pub struct FEN {
-    fen_str: String,
-}
-
-impl FEN {
-    pub fn new(&self, fen_str: &str) -> Option<FEN> {
-        if !self.check_fen(fen_str) {
-            return None;
-        }
-        Some(FEN {
-            fen_str: fen_str.to_string(),
-        })
+    #[test]
+    fn test_start_board_has_32_pieces() {
+        let count = START_BOARD.board.iter().flatten()
+            .filter(|sq| sq.piece_state.is_some())
+            .count();
+        assert_eq!(count, 32);
     }
 
-    pub fn to_board(&self) -> Option<Board> {
-        if !self.check_fen(&self.fen_str) {
-            return None;
-        }
-        let sections: Vec<&str> = self.fen_str.split(' ').collect();
+    #[test]
+    fn test_start_board_has_16_white_pieces() {
+        let count = START_BOARD.board.iter().flatten()
+            .filter_map(|sq| sq.piece_state)
+            .filter(|s| s.color == Color::White)
+            .count();
+        assert_eq!(count, 16);
+    }
 
-        let mut board: Board = EMPTY_BOARD;
-        for (row_idx, row_str) in sections[0].split('/').enumerate().rev() {
-            let mut col_idx: usize = 0;
-            for c in row_str.chars() {
-                if c.is_digit(10) {
-                    col_idx += c.to_digit(10).unwrap() as usize;
-                } else {
-                    board.board[row_idx - 1][col_idx - 1] = match c {
-                        'P' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::White, piece: Piece::Pawn, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'R' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::White, piece: Piece::Rook, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'N' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::White, piece: Piece::Knight, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'B' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::White, piece: Piece::Bishop, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'Q' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::White, piece: Piece::Queen, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'K' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::White, piece: Piece::King, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'p' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::Black, piece: Piece::Pawn, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'r' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::Black, piece: Piece::Rook, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'n' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::Black, piece: Piece::Knight, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'b' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::Black, piece: Piece::Bishop, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'q' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::Black, piece: Piece::Queen, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        'k' => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: Some(PieceState {color: Color::Black, piece: Piece::King, location: (row_idx, col_idx), has_moved: false, dead: false }),
-                        },
-                        _ => Square {
-                            row: row_idx + 1,
-                            column: col_idx + 1,
-                            piece_state: None,
-                        },
-                    };
-                    col_idx += 1;
+    #[test]
+    fn test_start_board_has_16_black_pieces() {
+        let count = START_BOARD.board.iter().flatten()
+            .filter_map(|sq| sq.piece_state)
+            .filter(|s| s.color == Color::Black)
+            .count();
+        assert_eq!(count, 16);
+    }
+
+    #[test]
+    fn test_start_board_piece_locations_match_square_coords() {
+        for row in 0..8 {
+            for col in 0..8 {
+                let sq = START_BOARD.board[row][col];
+                assert_eq!(sq.row, row + 1, "square row mismatch at [{row}][{col}]");
+                assert_eq!(sq.column, col + 1, "square col mismatch at [{row}][{col}]");
+                if let Some(state) = sq.piece_state {
+                    assert_eq!(state.location.0, row + 1, "piece location row mismatch at [{row}][{col}]");
+                    assert_eq!(state.location.1, col + 1, "piece location col mismatch at [{row}][{col}]");
                 }
             }
         }
-        Some(board)
     }
 
-    pub fn check_fen(&self, fen_str: &str) -> bool {
-        let sections: Vec<&str> = fen_str.split(' ').collect();
-        if sections.len() != 6 || sections[0].split('/').count() != 8 {
-            return false;
-        }
-
-        if sections[1].chars().next() != Some('w') && sections[1].chars().next() != Some('b') {
-            return false;
-        }
-
-        for char in sections[2].chars() {
-            if char != 'K' && char != 'Q' && char != 'k' && char != 'q' && char != '-' {
-                return false;
+    #[test]
+    fn test_start_board_no_pieces_have_moved() {
+        for sq in START_BOARD.board.iter().flatten() {
+            if let Some(state) = sq.piece_state {
+                assert!(!state.has_moved, "no piece should have moved at start");
+                assert!(!state.dead, "no piece should be dead at start");
             }
         }
-
-        for char in sections[3].chars() {
-            if char != '-' && !char.is_alphanumeric() {
-                return false;
-            }
-        }
-
-        if !sections[4].parse::<f64>().is_ok() || !sections[5].parse::<f64>().is_ok() {
-            return false;
-        }
-
-        for row in sections[0].split('/') {
-            let mut item_count = 0;
-            for c in row.chars() {
-                match c {
-                    'r' | 'n' | 'b' | 'q' | 'k' | 'p' | 'R' | 'N' | 'B' | 'Q' | 'K' | 'P' => {
-                        item_count += 1
-                    }
-                    '1'..='8' => item_count += c.to_digit(10).unwrap() as i32,
-                    _ => return false,
-                }
-            }
-
-            if item_count != 8 {
-                return false;
-            }
-        }
-
-        true
     }
 
-    pub fn to_board_state(&self) -> Option<BoardState> {
-        if !self.check_fen(&self.fen_str.to_string()) {
-            return None;
-        }
+    // ---- EMPTY_BOARD structure ----
 
-        let fen_sections: Vec<&str> = self.fen_str.split(' ').collect();
-        let board = self.to_board().unwrap();
-        let color: Color = match fen_sections[1].chars().next() {
-            Some('w') => Color::White,
-            Some('b') => Color::Black,
-            _ => panic!("Invalid color"),
-        };
+    #[test]
+    fn test_empty_board_has_no_pieces() {
+        let count = EMPTY_BOARD.board.iter().flatten()
+            .filter(|sq| sq.piece_state.is_some())
+            .count();
+        assert_eq!(count, 0);
+    }
 
-        for char in fen_sections[2].chars() {
-            match char {
-                '-' => break,
-                'K' => castling.castle_kingside = true,
-                'Q' => castling.castle_queenside = true,
-                'k' => castling.castle_kingside = true,
-                'q' => castling.castle_queenside = true,
-                _ => panic!("Problem parsing FEN"),
+    #[test]
+    fn test_empty_board_square_coords_correct() {
+        for row in 0..8 {
+            for col in 0..8 {
+                let sq = EMPTY_BOARD.board[row][col];
+                assert_eq!(sq.row, row + 1, "row mismatch at [{row}][{col}]");
+                assert_eq!(sq.column, col + 1, "col mismatch at [{row}][{col}]");
             }
         }
+    }
 
-        let en_passant: Option<EnPassant> = simple_algebraic_to_grid(fen_sections[3]);
+    // ---- Piece::to_char ----
 
-        let mut draw: DrawConditions = DrawConditions {
-            draw: false,
-            fifty_move_counter: fen_sections[4].parse::<usize>().unwrap(),
-            threefold_counter: 0,
-        };
+    #[test]
+    fn test_white_piece_chars() {
+        assert_eq!(Piece::Pawn.to_char(Color::White), "P");
+        assert_eq!(Piece::Rook.to_char(Color::White), "R");
+        assert_eq!(Piece::Knight.to_char(Color::White), "N");
+        assert_eq!(Piece::Bishop.to_char(Color::White), "B");
+        assert_eq!(Piece::Queen.to_char(Color::White), "Q");
+        assert_eq!(Piece::King.to_char(Color::White), "K");
+    }
 
-        if draw.fifty_move_counter == 50 {
-            draw.draw = true;
-        }
+    #[test]
+    fn test_black_piece_chars() {
+        assert_eq!(Piece::Pawn.to_char(Color::Black), "p");
+        assert_eq!(Piece::Rook.to_char(Color::Black), "r");
+        assert_eq!(Piece::Knight.to_char(Color::Black), "n");
+        assert_eq!(Piece::Bishop.to_char(Color::Black), "b");
+        assert_eq!(Piece::Queen.to_char(Color::Black), "q");
+        assert_eq!(Piece::King.to_char(Color::Black), "k");
+    }
 
-        Some(BoardState {
-            board: board,
-            active_color: color,
-            white_state: white_color_state,
-            black_state: black_color_state,
-            draw: draw,
-            time: None,
-        })
+    // ---- Color / Piece equality ----
+
+    #[test]
+    fn test_color_equality() {
+        assert_eq!(Color::White, Color::White);
+        assert_eq!(Color::Black, Color::Black);
+        assert_ne!(Color::White, Color::Black);
+    }
+
+    #[test]
+    fn test_piece_equality() {
+        assert_eq!(Piece::King, Piece::King);
+        assert_ne!(Piece::King, Piece::Queen);
     }
 }
