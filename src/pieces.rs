@@ -47,12 +47,7 @@ impl Piece {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CastlingRights {
     pub castle_kingside: bool,
-    pub castle_queenside: bool,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EnPassant {
-    pub target: Square,
+    pub castle_queenside: bool
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -93,7 +88,7 @@ pub struct Board {
 pub struct ColorState {
     pub color: Color,
     pub in_check: bool,
-    pub en_passant: Option<EnPassant>,
+    pub en_passant: Option<Square>,
     pub castling: CastlingRights
 }
 

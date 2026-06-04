@@ -10,7 +10,7 @@ use std::i32;
 pub struct PVS;
 
 impl PVS {
-    fn search(&self, mut alpha: i32, beta: i32, depth_left: i32, board: &Board, color: Color) -> i32 {
+    fn search(&self, mut alpha: i32, beta: i32, depth_left: i32, board: &Board, color: Color, board_state: BoardState) -> i32 {
         if depth_left == 0 {
             return match color {
                 Color::White => calculate_material(board),
@@ -19,7 +19,7 @@ impl PVS {
         }
 
         let mut move_list = MoveList::new();
-        move_list.generate_moves(board, color);
+        move_list.generate_moves(board, color, board_state);
 
         if move_list.move_count == 0 {
             return i32::MIN + 1;
@@ -28,13 +28,13 @@ impl PVS {
         for index in 0..move_list.move_count {
             let score: i32 = if index == 0 {
                 let new_board = self.setup_new_board(board, index, &move_list);
-                -self.search(-beta, -alpha, depth_left - 1, &new_board, self.switch_color(color))
+                -self.search(-beta, -alpha, depth_left - 1, &new_board, self.switch_color(color), board_state)
             } else {
                 let new_board = self.setup_new_board(board, index, &move_list);
-                let mut search_result = -self.search(-alpha - 1, -alpha, depth_left - 1, &new_board, self.switch_color(color));
+                let mut search_result = -self.search(-alpha - 1, -alpha, depth_left - 1, &new_board, self.switch_color(color), board_state);
 
                 if search_result > alpha && search_result < beta {
-                    search_result = -self.search(-beta, -alpha, depth_left - 1, &new_board, self.switch_color(color));
+                    search_result = -self.search(-beta, -alpha, depth_left - 1, &new_board, self.switch_color(color), board_state);
                 }
                 search_result
             };
@@ -49,12 +49,60 @@ impl PVS {
     }
     
     fn setup_new_board(&self, board: &Board, index: usize, move_list: &MoveList) -> Board {
-        let mut new_board = board.clone();
-        let prev_square = move_list.moves[index].previous_square;
-        let new_square = move_list.moves[index].current_square;
-        new_board.board[new_square.row - 1][new_square.column - 1] = new_square;
-        new_board.board[prev_square.row - 1][prev_square.column - 1].piece_state = None;
+        let mut new_board: Board = board.clone();
+        let mv = move_list.moves[index];
+        let prev_square = mv.previous_square;
+        let new_square = mv.current_square;
+        
+        if let Some(captured) = mv.captured_piece {
+            if let Some(mut square) = access_board(&new_board, captured.location.0, captured.location.1) {
+                square.piece_state = None;
+            }
+        }
 
+        if let Some(mut square) = access_board(board, prev_square.row, prev_square.column) {
+            if let Some(mut state) = square.piece_state {
+                state.location = (new_square.row, new_square.column);
+                state.has_moved = true;
+
+                new_board.board[new_square.row - 1][new_square.column - 1].piece_state = Some(state);
+            }
+
+            new_board.board[prev_square.row - 1][prev_square.column - 1].piece_state = None;
+        }
+
+        if let Some(square) = access_board(&new_board, new_square.row, new_square.column) {
+            if let Some(state) = square.piece_state {
+                if state.piece == Piece::King && mv.castling == true {
+                    match state.color {
+                        Color::White => {
+                            if state.location == (1, 3) {
+                                let rook_state = new_board.board[0][0].piece_state;
+                                new_board.board[0][0].piece_state = None;
+                                new_board.board[0][3].piece_state = rook_state;
+                            } else if state.location == (1, 7) {
+                                let rook_state = new_board.board[0][7].piece_state;
+                                new_board.board[0][7].piece_state = None;
+                                new_board.board[0][5].piece_state = rook_state;
+                            }
+                        },
+                        Color::Black => {
+                            if state.location == (8, 3) {
+                                let rook_state = new_board.board[7][0].piece_state;
+                                new_board.board[7][0].piece_state = None;
+                                new_board.board[7][3].piece_state = rook_state;
+                            } else if state.location == (8, 7) {
+                                let rook_state = new_board.board[7][7].piece_state;
+                                new_board.board[7][7].piece_state = None;
+                                new_board.board[7][5].piece_state = rook_state;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        
         new_board
     }
 
@@ -65,9 +113,9 @@ impl PVS {
         }
     }
 
-    pub fn best_move(&self, depth_left: i32, board: &Board, color: Color) -> Option<Move> {
+    pub fn best_move(&self, depth_left: i32, board: &Board, color: Color, board_state: BoardState) -> Option<Move> {
         let mut move_list = MoveList::new();
-        move_list.generate_moves(board, color);
+        move_list.generate_moves(board, color, board_state);
 
         if move_list.move_count == 0 {
             return None;
@@ -80,7 +128,7 @@ impl PVS {
 
         for index in 0..move_list.move_count {
             let new_board = self.setup_new_board(board, index, &move_list);
-            let score = -self.search(-beta, -alpha, depth_left - 1, &new_board, self.switch_color(color));
+            let score = -self.search(-beta, -alpha, depth_left - 1, &new_board, self.switch_color(color), board_state);
 
             if score > best_score {
                 best_score = score;
@@ -90,6 +138,28 @@ impl PVS {
         }
 
         Some(best_move)
+    }
+
+    fn perft(&self, board: &Board, color: Color, depth: u32, board_state: BoardState) -> u64 {
+        if depth == 0 {
+            return 1;
+        }
+
+        let mut move_list = MoveList::new();
+        move_list.generate_moves(board, color, board_state);
+
+        let mut nodes: u64 = 0;
+        
+        for index in 0..move_list.move_count {
+            let new_board = self.setup_new_board(board, index, &move_list);
+            let next_color = match color {
+                Color::White => Color::Black,
+                Color::Black => Color::White,
+            };
+            nodes += self.perft(&new_board, next_color, depth - 1, board_state);
+        }
+
+        nodes
     }
 }
 
@@ -116,19 +186,52 @@ mod tests {
         };
     }
 
+    fn empty_board_state() -> BoardState {
+        BoardState {
+            board: EMPTY_BOARD,
+            active_color: Color::White,
+            white_state: ColorState {
+                color: Color::White,
+                in_check: false,
+                en_passant: None,
+                castling: CastlingRights {
+                    castle_kingside: false,
+                    castle_queenside: false,
+                },
+            },
+            black_state: ColorState {
+                color: Color::Black,
+                in_check: false,
+                en_passant: None,
+                castling: CastlingRights {
+                    castle_kingside: false,
+                    castle_queenside: false,
+                },
+            },
+            draw: DrawConditions {
+                draw: false,
+                fifty_move_counter: 0,
+                threefold_counter: 0,
+            },
+            time: None,
+        }
+    }
+
     // ---- best_move ----
 
     #[test]
     fn test_best_move_returns_none_on_empty_board() {
         let pvs = PVS;
         let board = empty_board();
-        assert!(pvs.best_move(1, &board, Color::White).is_none());
+        let board_state = empty_board_state();
+        assert!(pvs.best_move(1, &board, Color::White, board_state).is_none());
     }
 
     #[test]
     fn test_best_move_returns_some_from_start() {
         let pvs = PVS;
-        assert!(pvs.best_move(1, &START_BOARD, Color::White).is_some());
+        let board_state = empty_board_state();
+        assert!(pvs.best_move(1, &START_BOARD, Color::White, board_state).is_some());
     }
 
     #[test]
@@ -141,7 +244,8 @@ mod tests {
         place_piece(&mut board, 5, 5, Piece::Queen, Color::Black);
 
         let pvs = PVS;
-        let mv = pvs.best_move(1, &board, Color::White).unwrap();
+        let board_state = empty_board_state();
+        let mv = pvs.best_move(1, &board, Color::White, board_state).unwrap();
         assert!(
             mv.captured_piece.is_some(),
             "should capture the free queen"
@@ -156,7 +260,8 @@ mod tests {
     #[test]
     fn test_best_move_depth_2_still_returns_move() {
         let pvs = PVS;
-        let result = pvs.best_move(2, &START_BOARD, Color::White);
+        let board_state = empty_board_state();
+        let result = pvs.best_move(2, &START_BOARD, Color::White, board_state);
         assert!(result.is_some());
     }
 
@@ -169,7 +274,8 @@ mod tests {
         place_piece(&mut board, 4, 7, Piece::Queen, Color::Black); // free queen on same row
 
         let pvs = PVS;
-        let mv = pvs.best_move(1, &board, Color::White).unwrap();
+        let board_state = empty_board_state();
+        let mv = pvs.best_move(1, &board, Color::White, board_state).unwrap();
         assert!(mv.captured_piece.is_some(), "should prefer capturing the queen");
     }
 
@@ -203,7 +309,8 @@ mod tests {
 
         let pvs = PVS;
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&board, Color::White);
+        let board_state = empty_board_state();
+        move_list.generate_moves(&board, Color::White, board_state);
 
         assert!(move_list.move_count > 0);
         let new_board = pvs.setup_new_board(&board, 0, &move_list);
@@ -231,7 +338,8 @@ mod tests {
 
         let pvs = PVS;
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&board, Color::White);
+        let board_state = empty_board_state();
+        move_list.generate_moves(&board, Color::White, board_state);
         pvs.setup_new_board(&board, 0, &move_list);
 
         assert_eq!(board, original, "original board should not be mutated");
@@ -243,12 +351,13 @@ mod tests {
     fn test_search_depth_0_white_returns_material() {
         let pvs = PVS;
         let mut board = empty_board();
+        let board_state = empty_board_state();
         place_piece(&mut board, 1, 5, Piece::King, Color::White);
         place_piece(&mut board, 8, 5, Piece::King, Color::Black);
         place_piece(&mut board, 4, 4, Piece::Queen, Color::White);
 
         // at depth 0 white is up a queen so score should be positive
-        let score = pvs.search(i32::MIN + 1, i32::MAX, 0, &board, Color::White);
+        let score = pvs.search(i32::MIN + 1, i32::MAX, 0, &board, Color::White, board_state);
         assert!(score > 0, "white up a queen should score positive at depth 0");
     }
 
@@ -256,12 +365,13 @@ mod tests {
     fn test_search_depth_0_black_flips_score() {
         let pvs = PVS;
         let mut board = empty_board();
+        let board_state = empty_board_state();
         place_piece(&mut board, 1, 5, Piece::King, Color::White);
         place_piece(&mut board, 8, 5, Piece::King, Color::Black);
         place_piece(&mut board, 4, 4, Piece::Queen, Color::White);
 
         // from black's perspective white is winning so score should be negative
-        let score = pvs.search(i32::MIN + 1, i32::MAX, 0, &board, Color::Black);
+        let score = pvs.search(i32::MIN + 1, i32::MAX, 0, &board, Color::Black, board_state);
         assert!(score < 0, "white up a queen should score negative for black at depth 0");
     }
 
@@ -269,7 +379,8 @@ mod tests {
     fn test_search_no_moves_returns_min() {
         let pvs = PVS;
         let board = empty_board();
-        let score = pvs.search(i32::MIN + 1, i32::MAX, 3, &board, Color::White);
+        let board_state = empty_board_state();
+        let score = pvs.search(i32::MIN + 1, i32::MAX, 3, &board, Color::White, board_state);
         assert_eq!(score, i32::MIN + 1, "no legal moves should return MIN+1");
     }
     // ---- START_BOARD structure ----
@@ -449,5 +560,40 @@ mod tests {
     fn test_piece_equality() {
         assert_eq!(Piece::King, Piece::King);
         assert_ne!(Piece::King, Piece::Queen);
+    }
+
+     #[test]
+    fn perft_depth_1() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 1, board_state), 20);
+    }
+
+    #[test]
+    fn perft_depth_2() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 2, board_state), 400);
+    }
+
+    #[test]
+    fn perft_depth_3() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 3, board_state), 8902);
+    }
+
+     #[test]
+    fn perft_depth_4() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 4, board_state), 197281);
+    }
+
+    #[test]
+    fn perft_depth_5() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 5, board_state), 4865609)
     }
 }

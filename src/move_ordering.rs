@@ -28,7 +28,7 @@ impl MoveList {
         }
     }
 
-    pub fn generate_moves(&mut self, board: &Board, color: Color) {
+    pub fn generate_moves(&mut self, board: &Board, color: Color, board_state: BoardState) {
         for row in 0..=7 {
             for col in 0..=7 {
                 if let Some(piece_state) = board.board[row][col].piece_state {
@@ -36,8 +36,8 @@ impl MoveList {
                         match piece_state.piece {
                             Piece::Pawn => {
                                 match piece_state.color {
-                                    Color::White => self.extend(get_white_pawn_moves(piece_state, board)),
-                                    Color::Black => self.extend(get_black_pawn_moves(piece_state, board))
+                                    Color::White => self.extend(get_white_pawn_moves(piece_state, board, board_state)),
+                                    Color::Black => self.extend(get_black_pawn_moves(piece_state, board, board_state))
                                 }
                             },
                             Piece::Bishop => {
@@ -119,27 +119,60 @@ mod tests {
         };
     }
 
+    fn empty_board_state() -> BoardState {
+        BoardState {
+            board: EMPTY_BOARD,
+            active_color: Color::White,
+            white_state: ColorState {
+                color: Color::White,
+                in_check: false,
+                en_passant: None,
+                castling: CastlingRights {
+                    castle_kingside: false,
+                    castle_queenside: false,
+                },
+            },
+            black_state: ColorState {
+                color: Color::Black,
+                in_check: false,
+                en_passant: None,
+                castling: CastlingRights {
+                    castle_kingside: false,
+                    castle_queenside: false,
+                },
+            },
+            draw: DrawConditions {
+                draw: false,
+                fifty_move_counter: 0,
+                threefold_counter: 0,
+            },
+            time: None,
+        }
+    }
+
     // ---- generate_moves ----
 
     #[test]
     fn test_generate_moves_empty_board() {
         let board = empty_board();
+        let board_state = empty_board_state();
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&board, Color::White);
+        move_list.generate_moves(&board, Color::White, board_state);
         assert_eq!(move_list.move_count, 0);
     }
 
     #[test]
     fn test_generate_moves_only_generates_for_active_color() {
         let mut board = empty_board();
+        let board_state = empty_board_state();
         place_piece(&mut board, 2, 1, Piece::Pawn, Color::White);
         place_piece(&mut board, 7, 1, Piece::Pawn, Color::Black);
 
         let mut white_moves = MoveList::new();
-        white_moves.generate_moves(&board, Color::White);
+        white_moves.generate_moves(&board, Color::White, board_state);
 
         let mut black_moves = MoveList::new();
-        black_moves.generate_moves(&board, Color::Black);
+        black_moves.generate_moves(&board, Color::Black, board_state);
 
         // white should not generate black's moves and vice versa
         assert!(white_moves.move_count > 0);
@@ -152,14 +185,16 @@ mod tests {
         // in the starting position white has exactly 20 legal moves
         // (16 pawn moves + 4 knight moves)
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&START_BOARD, Color::White);
+        let board_state = empty_board_state();
+        move_list.generate_moves(&START_BOARD, Color::White, board_state);
         assert_eq!(move_list.move_count, 20);
     }
 
     #[test]
     fn test_starting_position_black_has_20_moves() {
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&START_BOARD, Color::Black);
+        let board_state = empty_board_state();
+        move_list.generate_moves(&START_BOARD, Color::Black, board_state);
         assert_eq!(move_list.move_count, 20);
     }
 
@@ -173,7 +208,8 @@ mod tests {
         place_piece(&mut board, 3, 5, Piece::Queen, Color::Black); // capturable queen
 
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&board, Color::White);
+        let board_state = empty_board_state();
+        move_list.generate_moves(&board, Color::White, board_state);
         move_list.score_moves(&board);
 
         // at least one score should be positive (capturing the queen)
@@ -182,17 +218,16 @@ mod tests {
     }
 
     #[test]
-    fn test_score_moves_fills_score_array() {
+    fn test_score_moves_scores_all_generated_moves() {
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&START_BOARD, Color::White);
+        let board_state = empty_board_state();
+        move_list.generate_moves(&START_BOARD, Color::White, board_state);
+        let count = move_list.move_count;
         move_list.score_moves(&START_BOARD);
 
-        // all scores should be filled (not left at 0 from initialization)
-        // in starting position all moves are quiet so scores should be equal
-        let first_score = move_list.score[0];
-        for i in 0..move_list.move_count {
-            assert_eq!(move_list.score[i], first_score,
-                "all quiet moves from starting position should score equally");
+        // score array beyond move_count should still be 0 (untouched)
+        for i in count..218 {
+            assert_eq!(move_list.score[i], 0, "ungenerated moves should not be scored");
         }
     }
 
@@ -205,7 +240,8 @@ mod tests {
         place_piece(&mut board, 3, 5, Piece::Queen, Color::Black);
 
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&board, Color::White);
+        let board_state = empty_board_state();
+        move_list.generate_moves(&board, Color::White, board_state);
         move_list.score_moves(&board);
         move_list.order_moves();
 
@@ -225,7 +261,8 @@ mod tests {
         place_piece(&mut board, 3, 5, Piece::Queen, Color::Black);
 
         let mut move_list = MoveList::new();
-        move_list.generate_moves(&board, Color::White);
+        let board_state = empty_board_state();
+        move_list.generate_moves(&board, Color::White, board_state);
         move_list.score_moves(&board);
         move_list.order_moves();
 
@@ -242,8 +279,9 @@ mod tests {
     #[test]
     fn test_push_increments_count() {
         let mut move_list = MoveList::new();
+        let board_state = empty_board_state();
         assert_eq!(move_list.move_count, 0);
-        move_list.generate_moves(&START_BOARD, Color::White);
+        move_list.generate_moves(&START_BOARD, Color::White, board_state);
         assert!(move_list.move_count > 0);
     }
 

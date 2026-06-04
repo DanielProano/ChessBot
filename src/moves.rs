@@ -152,12 +152,12 @@ pub fn create(
 }
 
 pub fn access_board(board: &Board, row: usize, column: usize) -> Option<Square> {
-    let normalized_row = row - 1;
-    let normalized_col = column - 1;
-    if normalized_row > 7 || normalized_col > 7 {
-        println!("Warning: Out of Bounds Access of Board");
+    if !in_bounds(row, column) {
         return None;
     }
+
+    let normalized_row = row - 1;
+    let normalized_col = column - 1;
 
     Some(board.board[normalized_row][normalized_col])
 }
@@ -166,8 +166,6 @@ pub fn in_bounds(row: usize, col: usize) -> bool {
     if row <= 8 && row >= 1 && col <= 8 && col >= 1 {
         return true;
     }
-
-    println!("Out of Bounds: row {}, col {}", row, col);
 
     return false;
 }
@@ -215,9 +213,11 @@ pub fn square_is_attacked(square: Square, active_color: Color, board: &Board) ->
                 let target_col = (cur_col + col) as usize;
 
                 if in_bounds(target_row, target_col) {
-                    if let Some(state) = board.board[target_row][target_col].piece_state {
-                        if state.piece == Piece::Pawn && state.color != active_color {
-                            return true;
+                    if let Some(square) = access_board(board, target_row, target_col) {
+                        if let Some(state) = square.piece_state {
+                            if state.piece == Piece::Pawn && state.color != active_color {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -259,11 +259,11 @@ pub fn square_is_attacked(square: Square, active_color: Color, board: &Board) ->
             ];
 
             for &(row, col) in &pawn_deltas {
-                let row = (cur_row + row) as usize;
-                let column  = (cur_col + col) as usize;
+                let target_row = (cur_row + row) as usize;
+                let target_column  = (cur_col + col) as usize;
 
-                if in_bounds(row, column) {
-                    if let Some(square) = access_board(board, row, column) {
+                if in_bounds(target_row, target_column) {
+                    if let Some(square) = access_board(board, target_row, target_column) {
                         if let Some(state) = square.piece_state {
                             if state.piece == Piece::Pawn && state.color != active_color {
                                 return true;
@@ -283,8 +283,8 @@ pub fn column_is_attacked(square: Square, active_color: Color, board: &Board) ->
     let cur_col = square.column;
 
     for row in (initial_row + 1)..8 {
-        if in_bounds(row as usize, cur_col as usize) {
-            if let Some(square) = access_board(board, initial_row, cur_col) {
+        if in_bounds(row, cur_col) {
+            if let Some(square) = access_board(board, row, cur_col) {
                 if let Some(state) = square.piece_state {
                     if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
                         return true;
@@ -296,7 +296,7 @@ pub fn column_is_attacked(square: Square, active_color: Color, board: &Board) ->
     }
 
     for row in (0..initial_row).rev() {
-        if in_bounds(row as usize, cur_col as usize) {
+        if in_bounds(row, cur_col) {
             if let Some(square) = access_board(board, row, cur_col) {
                 if let Some(state) = square.piece_state {
                     if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
@@ -316,8 +316,8 @@ pub fn row_is_attacked(square: Square, active_color: Color, board: &Board) -> bo
     let initial_col = square.column;
 
     for col in (initial_col + 1)..8 {
-        if in_bounds(cur_row as usize, col as usize) {
-            if let Some(square) = access_board(board, cur_row, initial_col) {
+        if in_bounds(cur_row, col) {
+            if let Some(square) = access_board(board, cur_row, col) {
                 if let Some(state) = square.piece_state {
                     if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
                         return true;
@@ -329,7 +329,7 @@ pub fn row_is_attacked(square: Square, active_color: Color, board: &Board) -> bo
     }
 
     for col in (0..initial_col).rev() {
-        if in_bounds(cur_row as usize, col as usize) {
+        if in_bounds(cur_row, col) {
             if let Some(square) = access_board(board, cur_row, col) {
                 if let Some(state) = square.piece_state {
                     if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
@@ -369,6 +369,164 @@ pub fn diagonal_is_attacked(square: Square, active_color: Color, board: &Board) 
     }
 
     return false;
+}
+
+pub fn get_pawn_moves(state: PieceState, board: &Board, board_state: BoardState) -> Vec<Move> {
+    if state.piece != Piece::Pawn {
+        println!("Warning: State is not representing a pawn");
+        return vec![];
+    }
+
+    match state.color {
+        Color::White => get_white_pawn_moves(state, board, board_state),
+        Color::Black => get_black_pawn_moves(state, board, board_state),
+    }
+}
+
+pub fn get_white_pawn_moves(state: PieceState, board: &Board, mut board_state: BoardState) -> Vec<Move> {
+    let mut moves: Vec<Move> = vec![];
+    let cur_row: usize = state.location.0;
+    let cur_col: usize = state.location.1;
+
+    if cur_row == 2 {
+        if let (Some(square), Some(inbetween_square), Some(target_square)) = (
+            access_board(board, cur_row, cur_col), 
+            access_board(board, cur_row + 1, cur_col), 
+            access_board(board, cur_row + 2, cur_col)
+        ) {
+            if inbetween_square.piece_state.is_none() && target_square.piece_state.is_none() {
+                add_pawn_move(&mut moves, state, square, cur_row + 2, cur_col, None);
+                board_state.white_state.en_passant = Some(target_square);
+            }
+        }
+    }
+
+    if cur_row + 1 <= 8 {
+        if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row + 1, cur_col)) {
+            if target_square.piece_state.is_none() {
+                add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col, None);
+                board_state.white_state.en_passant = None;
+            }
+        }
+    }
+
+    if cur_row < 8 && cur_col > 1 {
+        if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row + 1, cur_col - 1)) {
+            if let Some(target_piece) = target_square.piece_state {
+                //Normal capture
+
+                add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col - 1, Some(target_piece));
+                board_state.white_state.en_passant = None;
+            } else if target_square.piece_state.is_none() {
+                //Special en passant
+                
+                if let (Some(enemy_square), Some(special_square)) = (board_state.black_state.en_passant, access_board(board, cur_row, cur_col - 1)) {
+                    if let Some(target_piece) = special_square.piece_state {
+                        if enemy_square == special_square {
+                            add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col - 1, Some(target_piece));
+                            board_state.black_state.en_passant = None;
+                        }
+                    }
+                }
+            }
+        } 
+    }
+
+    if cur_row < 8 && cur_col < 8 {
+        if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row + 1, cur_col + 1)) {
+            if let Some(target_piece) = target_square.piece_state {
+                add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col + 1, Some(target_piece));
+                board_state.white_state.en_passant = None;
+            } else if target_square.piece_state.is_none() {
+                //Special en passant
+
+                if let (Some(enemy_square), Some(special_square)) = (board_state.white_state.en_passant, access_board(board, cur_row, cur_col + 1)) {
+                    if let Some(target_piece) = special_square.piece_state {
+                        if enemy_square == special_square {
+                            add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col + 1, Some(target_piece));
+                            board_state.black_state.en_passant = None;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    moves
+}
+
+pub fn get_black_pawn_moves(state: PieceState, board: &Board, mut board_state: BoardState) -> Vec<Move> {
+    let mut moves: Vec<Move> = vec![];
+    let cur_row: usize = state.location.0;
+    let cur_col: usize = state.location.1;
+
+    if cur_row == 7 {
+        if let (Some(square), Some(inbetween_square), Some(target_square)) = (
+            access_board(board, cur_row, cur_col), 
+            access_board(board, cur_row - 1, cur_col), 
+            access_board(board, cur_row - 2, cur_col)
+        ) {
+            if inbetween_square.piece_state.is_none() && target_square.piece_state.is_none() {
+                add_pawn_move(&mut moves, state, square, cur_row - 2, cur_col, None);
+                board_state.black_state.en_passant = Some(target_square);
+            }
+        }
+    }
+
+    if cur_row - 1 >= 1 {
+        if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row - 1, cur_col)) {
+            if target_square.piece_state.is_none() {
+                add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col, None);
+                board_state.black_state.en_passant = None;
+            }
+        }
+    }
+
+    if cur_row > 1 && cur_col > 1 {
+        if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row - 1, cur_col - 1)) {
+            if let Some(target_piece) = target_square.piece_state {
+                //Normal pawn capture
+
+                add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col - 1, Some(target_piece));
+                board_state.black_state.en_passant = None;
+            } else if target_square.piece_state.is_none() {
+                //Special en passant
+
+                if let (Some(enemy_square), Some(special_square)) = (board_state.white_state.en_passant, access_board(board, cur_row, cur_col - 1)) {
+                    if let Some(target_piece) = special_square.piece_state {
+                        if enemy_square == special_square {
+                            add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col - 1, Some(target_piece));
+                            board_state.black_state.en_passant = None;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if cur_row > 1 && cur_col < 8 {
+        if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row - 1, cur_col + 1)) {
+            if let Some(target_piece) = target_square.piece_state {
+                //Normal pawn capture
+
+                add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col + 1, Some(target_piece));
+                board_state.black_state.en_passant = None;
+            } else if target_square.piece_state.is_none() {
+                //Special en passant
+                
+                if let (Some(enemy_square), Some(special_square)) = (board_state.white_state.en_passant, access_board(board, cur_row, cur_col + 1)) {
+                    if let Some(target_piece) = special_square.piece_state {
+                        if enemy_square == special_square {
+                            add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col + 1, Some(target_piece));
+                            board_state.black_state.en_passant = None;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    moves
 }
 
 fn add_pawn_move(
@@ -427,90 +585,6 @@ fn add_pawn_move(
             }
         }   
     }
-}
-
-pub fn get_pawn_moves(state: PieceState, board: &Board) -> Vec<Move> {
-    if state.piece != Piece::Pawn {
-        println!("Warning: State is not representing a pawn");
-        return vec![];
-    }
-
-    match state.color {
-        Color::White => get_white_pawn_moves(state, board),
-        Color::Black => get_black_pawn_moves(state, board),
-    }
-}
-
-pub fn get_white_pawn_moves(state: PieceState, board: &Board) -> Vec<Move> {
-    let mut moves: Vec<Move> = vec![];
-    let cur_row: usize = state.location.0;
-    let cur_col: usize = state.location.1;
-
-    if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row + 2, cur_col)) {
-        if cur_row == 2 && target_square.piece_state.is_none() {
-            add_pawn_move(&mut moves, state, square, cur_row + 2, cur_col, None);
-        }
-    }
-
-    if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row + 1, cur_col)) {
-        if cur_row + 1 <= 8 && target_square.piece_state.is_none() {
-            add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col, None);
-        }
-    }
-
-    if cur_row < 8 && cur_col < 8 {
-        if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row + 1, cur_col + 1)) {
-            if let Some(target_piece) = target_square.piece_state {
-                add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col + 1, Some(target_piece));
-            }
-        }
-    }
-
-    if cur_row < 8 && cur_col > 1 {
-        if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row + 1, cur_col - 1)) {
-            if let Some(target_piece) = target_square.piece_state {
-                add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col - 1, Some(target_piece));
-            }
-        }
-    }
-
-    moves
-}
-
-pub fn get_black_pawn_moves(state: PieceState, board: &Board) -> Vec<Move> {
-    let mut moves: Vec<Move> = vec![];
-    let cur_row: usize = state.location.0;
-    let cur_col: usize = state.location.1;
-
-    if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row - 2, cur_col)) {
-        if cur_row == 7 && target_square.piece_state.is_none() {
-            add_pawn_move(&mut moves, state, square, cur_row - 2, cur_col, None);
-        }
-    }
-
-    if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row - 1, cur_col)) {
-        if cur_row - 1 >= 1 && target_square.piece_state.is_none() {
-            add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col, None);
-        }
-    }
-
-    if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row - 1, cur_col - 1)) {
-        if cur_row > 1 && cur_col > 1 {
-            if let Some(target_piece) = target_square.piece_state {
-                add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col - 1, Some(target_piece));
-            }
-        }
-    }
-
-    if let (Some(square), Some(target_square)) = (access_board(board, cur_row, cur_col), access_board(board, cur_row - 1, cur_col + 1)) {
-        if cur_row > 1 && cur_col < 8 {
-            if let Some(target_piece) = target_square.piece_state {
-                add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col + 1, Some(target_piece));
-            }
-        }
-    }
-
-    moves
 }
 
 pub fn get_knight_moves(state: PieceState, board: &Board) -> Vec<Move> {
@@ -915,6 +989,37 @@ mod tests {
         };
     }
 
+    fn empty_board_state() -> BoardState {
+        BoardState {
+            board: EMPTY_BOARD,
+            active_color: Color::White,
+            white_state: ColorState {
+                color: Color::White,
+                in_check: false,
+                en_passant: None,
+                castling: CastlingRights {
+                    castle_kingside: false,
+                    castle_queenside: false,
+                },
+            },
+            black_state: ColorState {
+                color: Color::Black,
+                in_check: false,
+                en_passant: None,
+                castling: CastlingRights {
+                    castle_kingside: false,
+                    castle_queenside: false,
+                },
+            },
+            draw: DrawConditions {
+                draw: false,
+                fifty_move_counter: 0,
+                threefold_counter: 0,
+            },
+            time: None,
+        }
+    }
+
     // ---- validate ----
 
     #[test]
@@ -967,13 +1072,12 @@ mod tests {
 
     // ---- white pawn moves ----
 
-    #[test]
+        #[test]
     fn test_white_pawn_single_push() {
         let mut board = empty_board();
         place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
         let state = board.board[1][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board);
-        println!("Moves: {:?}", moves);
+        let moves = get_white_pawn_moves(state, &board, empty_board_state());
         assert!(moves.iter().any(|m| m.current_square.row == 3 && m.current_square.column == 4));
     }
 
@@ -982,8 +1086,7 @@ mod tests {
         let mut board = empty_board();
         place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
         let state = board.board[1][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board);
-        println!("Moves: {:?}", moves);
+        let moves = get_white_pawn_moves(state, &board, empty_board_state());
         assert!(moves.iter().any(|m| m.current_square.row == 4 && m.current_square.column == 4));
     }
 
@@ -993,8 +1096,7 @@ mod tests {
         place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
         place_piece(&mut board, 3, 4, Piece::Pawn, Color::Black);
         let state = board.board[1][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board);
-        println!("Moves: {:?}", moves);
+        let moves = get_white_pawn_moves(state, &board, empty_board_state());
         assert!(moves.is_empty());
     }
 
@@ -1004,8 +1106,7 @@ mod tests {
         place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
         place_piece(&mut board, 3, 5, Piece::Pawn, Color::Black);
         let state = board.board[1][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board);
-        println!("Moves: {:?}", moves);
+        let moves = get_white_pawn_moves(state, &board, empty_board_state());
         assert!(moves.iter().any(|m| m.current_square.row == 3 && m.current_square.column == 5 && m.captured_piece.is_some()));
     }
 
@@ -1014,20 +1115,16 @@ mod tests {
         let mut board = empty_board();
         place_piece(&mut board, 7, 4, Piece::Pawn, Color::White);
         let state = board.board[6][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board);
-        println!("Moves: {:?}", moves);
+        let moves = get_white_pawn_moves(state, &board, empty_board_state());
         assert_eq!(moves.iter().filter(|m| m.promotion.is_some()).count(), 4);
     }
-
-    // ---- black pawn moves ----
 
     #[test]
     fn test_black_pawn_single_push() {
         let mut board = empty_board();
         place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
         let state = board.board[6][3].piece_state.unwrap();
-        let moves = get_black_pawn_moves(state, &board);
-        println!("Moves: {:?}", moves);
+        let moves = get_black_pawn_moves(state, &board, empty_board_state());
         assert!(moves.iter().any(|m| m.current_square.row == 6 && m.current_square.column == 4));
     }
 
@@ -1036,8 +1133,7 @@ mod tests {
         let mut board = empty_board();
         place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
         let state = board.board[6][3].piece_state.unwrap();
-        let moves = get_black_pawn_moves(state, &board);
-        println!("Moves: {:?}", moves);
+        let moves = get_black_pawn_moves(state, &board, empty_board_state());
         assert!(moves.iter().any(|m| m.current_square.row == 5 && m.current_square.column == 4));
     }
 
@@ -1047,12 +1143,11 @@ mod tests {
         place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
         place_piece(&mut board, 6, 5, Piece::Pawn, Color::White);
         let state = board.board[6][3].piece_state.unwrap();
-        let moves = get_black_pawn_moves(state, &board);
-        println!("Moves: {:?}", moves);
+        let moves = get_black_pawn_moves(state, &board, empty_board_state());
         assert!(moves.iter().any(|m| m.current_square.row == 6 && m.current_square.column == 5 && m.captured_piece.is_some()));
     }
 
-    // ---- knight moves ----
+    //knight moves
 
     #[test]
     fn test_knight_moves_from_center() {
@@ -1240,5 +1335,44 @@ mod tests {
         place_piece(&mut board, 1, 1, Piece::Bishop, Color::Black);
         let square = Square { row: 4, column: 4, piece_state: None };
         assert!(square_is_attacked(square, Color::White, &board));
+    }
+
+    #[test]
+    fn test_white_pawn_en_passant_left() {
+        let mut board = empty_board();
+        place_piece(&mut board, 5, 4, Piece::Pawn, Color::White);
+        place_piece(&mut board, 5, 3, Piece::Pawn, Color::Black);
+
+        let mut board_state = empty_board_state();
+        // black just double pushed to col 3, row 5 — en passant target is row 6, col 3
+        board_state.black_state.en_passant = Some(Square {
+            row: 5, column: 3, piece_state: board.board[4][2].piece_state
+        });
+
+        let state = board.board[4][3].piece_state.unwrap();
+        let moves = get_white_pawn_moves(state, &board, board_state);
+        assert!(
+            moves.iter().any(|m| m.current_square.row == 6 && m.current_square.column == 3 && m.captured_piece.is_some()),
+            "white should be able to capture en passant to the left"
+        );
+    }
+
+    #[test]
+    fn test_black_pawn_en_passant_right() {
+        let mut board = empty_board();
+        place_piece(&mut board, 4, 4, Piece::Pawn, Color::Black);
+        place_piece(&mut board, 4, 5, Piece::Pawn, Color::White);
+
+        let mut board_state = empty_board_state();
+        board_state.white_state.en_passant = Some(Square {
+            row: 4, column: 5, piece_state: board.board[3][4].piece_state
+        });
+
+        let state = board.board[3][3].piece_state.unwrap();
+        let moves = get_black_pawn_moves(state, &board, board_state);
+        assert!(
+            moves.iter().any(|m| m.current_square.row == 3 && m.current_square.column == 5 && m.captured_piece.is_some()),
+            "black should be able to capture en passant to the right"
+        );
     }
 }

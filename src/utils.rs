@@ -1,6 +1,6 @@
 use crate::pieces::*;
 
-pub fn simple_algebraic_to_grid(notation: &str) -> Option<EnPassant> {
+pub fn simple_algebraic_to_grid(notation: &str) -> Option<Square> {
     let mut square = Square {
         row: 0,
         column: 0,
@@ -45,9 +45,8 @@ pub fn simple_algebraic_to_grid(notation: &str) -> Option<EnPassant> {
         }
     }
 
-    Some(EnPassant { target: square })
+    Some(square)
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -60,29 +59,29 @@ mod tests {
     #[test]
     fn test_a1_converts_correctly() {
         let result = simple_algebraic_to_grid("a1").unwrap();
-        assert_eq!(result.target.column, 1);
-        assert_eq!(result.target.row, 1);
+        assert_eq!(result.column, 1);
+        assert_eq!(result.row, 1);
     }
 
     #[test]
     fn test_h8_converts_correctly() {
         let result = simple_algebraic_to_grid("h8").unwrap();
-        assert_eq!(result.target.column, 8);
-        assert_eq!(result.target.row, 8);
+        assert_eq!(result.column, 8);
+        assert_eq!(result.row, 8);
     }
 
     #[test]
     fn test_e4_converts_correctly() {
         let result = simple_algebraic_to_grid("e4").unwrap();
-        assert_eq!(result.target.column, 5);
-        assert_eq!(result.target.row, 4);
+        assert_eq!(result.column, 5);
+        assert_eq!(result.row, 4);
     }
 
     #[test]
     fn test_d6_converts_correctly() {
         let result = simple_algebraic_to_grid("d6").unwrap();
-        assert_eq!(result.target.column, 4);
-        assert_eq!(result.target.row, 6);
+        assert_eq!(result.column, 4);
+        assert_eq!(result.row, 6);
     }
 
     #[test]
@@ -93,7 +92,7 @@ mod tests {
         ];
         for (notation, expected_col) in cols {
             let result = simple_algebraic_to_grid(notation).unwrap();
-            assert_eq!(result.target.column, expected_col, "failed for {}", notation);
+            assert_eq!(result.column, expected_col, "failed for {}", notation);
         }
     }
 
@@ -105,7 +104,7 @@ mod tests {
         ];
         for (notation, expected_row) in rows {
             let result = simple_algebraic_to_grid(notation).unwrap();
-            assert_eq!(result.target.row, expected_row, "failed for {}", notation);
+            assert_eq!(result.row, expected_row, "failed for {}", notation);
         }
     }
 
@@ -142,6 +141,6 @@ mod tests {
     #[test]
     fn test_result_has_no_piece_state() {
         let result = simple_algebraic_to_grid("e4").unwrap();
-        assert!(result.target.piece_state.is_none());
+        assert!(result.piece_state.is_none());
     }
 }

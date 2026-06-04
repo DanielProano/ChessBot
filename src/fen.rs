@@ -223,7 +223,7 @@ impl FEN {
             }
         }
 
-        let en_passant: Option<EnPassant> = simple_algebraic_to_grid(fen_sections[3]);
+        let en_passant: Option<Square> = simple_algebraic_to_grid(fen_sections[3]);
 
         let mut draw: DrawConditions = DrawConditions {
             draw: false,
