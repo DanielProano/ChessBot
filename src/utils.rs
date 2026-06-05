@@ -1,4 +1,5 @@
 use crate::pieces::*;
+use crate::moves::*;
 
 pub fn simple_algebraic_to_grid(notation: &str) -> Option<Square> {
     let mut square = Square {
@@ -47,6 +48,255 @@ pub fn simple_algebraic_to_grid(notation: &str) -> Option<Square> {
 
     Some(square)
 }
+
+
+pub fn access_board(board: &Board, row: usize, column: usize) -> Option<Square> {
+    if !in_bounds(row, column) {
+        return None;
+    }
+
+    let normalized_row = row - 1;
+    let normalized_col = column - 1;
+
+    Some(board.board[normalized_row][normalized_col])
+}
+
+pub fn in_bounds(row: usize, col: usize) -> bool {
+    if row <= 8 && row >= 1 && col <= 8 && col >= 1 {
+        return true;
+    }
+
+    return false;
+}
+
+pub fn square_is_attacked(square: Square, active_color: Color, board: &Board, mut check_mask: Option<&mut CheckMask>) -> bool {
+    let cur_row = square.row as i32;
+    let cur_col = square.column as i32;
+
+    for &(row, col) in &KNIGHT_DELTAS {
+        let target_row = (cur_row + row) as usize;
+        let target_col = (cur_col + col) as usize;
+
+        if in_bounds(target_row, target_col) {
+            if let Some(square) = access_board(&board, target_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if state.piece == Piece::Knight && state.color != active_color {
+                        if let Some(ref mut mask) = check_mask {
+                            mask.check_mask[target_row - 1][target_col - 1] = true;
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    if row_is_attacked(square, active_color, board, check_mask.as_deref_mut()) {
+        return true;
+    }
+
+    if column_is_attacked(square, active_color, board, check_mask.as_deref_mut()) {
+        return true;
+    }
+
+    if diagonal_is_attacked(square, active_color, board, check_mask.as_deref_mut()) {
+        return true;
+    }
+
+    let pawn_row_offset = match active_color {
+        Color::White => 1, 
+        Color::Black => -1,
+    };
+
+    let pawn_deltas = [(pawn_row_offset, 1), (pawn_row_offset, -1)];
+
+    for &(row, col) in &pawn_deltas {
+        let target_row = (cur_row + row) as usize;
+        let target_col = (cur_col + col) as usize;
+
+        if in_bounds(target_row, target_col) {
+            if let Some(square) = access_board(board, target_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if state.piece == Piece::Pawn && state.color != active_color {
+                        if let Some(ref mut mask) = check_mask {
+                            mask.check_mask[target_row - 1][target_col - 1] = true;
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+pub fn column_is_attacked(square: Square, active_color: Color, board: &Board, mut check_mask: Option<&mut CheckMask>) -> bool {
+    let initial_row = square.row;
+    let cur_col = square.column;
+
+    for row in (initial_row + 1)..=8 {
+        if in_bounds(row, cur_col) {
+            if let Some(square) = access_board(board, row, cur_col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
+                        if let Some(ref mut mask) = check_mask {
+                            for trace_row in initial_row..=row {
+                                mask.check_mask[trace_row - 1][cur_col - 1] = true;
+                            }
+                        }
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    for row in (0..initial_row).rev() {
+        if in_bounds(row, cur_col) {
+            if let Some(square) = access_board(board, row, cur_col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
+                        if let Some(ref mut mask) = check_mask {
+                            for trace_row in row..=initial_row {
+                                mask.check_mask[trace_row - 1][cur_col - 1] = true;
+                            }
+                        }
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+pub fn row_is_attacked(square: Square, active_color: Color, board: &Board, mut check_mask: Option<&mut CheckMask>) -> bool {
+    let cur_row = square.row;
+    let initial_col = square.column;
+
+    for col in (initial_col + 1)..=8 {
+        if in_bounds(cur_row, col) {
+            if let Some(square) = access_board(board, cur_row, col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
+                        if let Some(ref mut mask) = check_mask {
+                            for trace_col in initial_col..=col {
+                                mask.check_mask[cur_row - 1][trace_col -1 ] = true;
+                            }
+                        }
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    for col in (0..initial_col).rev() {
+        if in_bounds(cur_row, col) {
+            if let Some(square) = access_board(board, cur_row, col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
+                        if let Some(ref mut mask) = check_mask {
+                            for trace_col in col..=initial_col {
+                                mask.check_mask[cur_row - 1][trace_col - 1] = true;
+                            }
+                        }
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+pub fn diagonal_is_attacked(square: Square, active_color: Color, board: &Board, mut check_mask: Option<&mut CheckMask>) -> bool {
+    let initial_row: i32 = square.row as i32;
+    let initial_col: i32 = square.column as i32;
+
+    for &(r_idx, c_idx) in &BISHOP_DELTAS {
+        for multiplier in 1..=8 {
+            let target_row = (initial_row + r_idx * multiplier) as usize;
+            let target_col = (initial_col + c_idx * multiplier) as usize;
+
+            if !in_bounds(target_row, target_col) {
+                break;
+            }
+
+            if let Some(square) = access_board(board, target_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Queen || state.piece == Piece::Bishop) && state.color != active_color {
+                        if let Some(ref mut mask) = check_mask {
+                            mask.check_mask[(initial_row - 1) as usize][(initial_col - 1) as usize] = true;
+                            
+                            for step in 1..=multiplier {
+                                let trace_row = (initial_row + r_idx * step) as usize;
+                                let trace_col = (initial_col + c_idx * step) as usize;
+                                mask.check_mask[trace_row - 1][trace_col - 1] = true;
+                            }
+                        }
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+pub fn is_legal_move(mv: &Move, board: &Board, color: Color) -> bool {
+    let mut test_board = board.clone();
+    test_board.board[mv.previous_square.row - 1][mv.previous_square.column - 1].piece_state = None;
+    test_board.board[mv.current_square.row - 1][mv.current_square.column - 1] = mv.current_square;
+    if let Some(captured) = mv.captured_piece {
+        test_board.board[captured.location.0 - 1][captured.location.1 - 1].piece_state = None;
+    }
+    let Some(king_square) = find_king(&test_board, color) else {
+        return true;
+    };
+    !square_is_attacked(king_square, color, &test_board, None)
+}
+
+pub fn find_king(board: &Board, color: Color) -> Option<Square> {
+    for row in 1..=8 {
+        for col in 1..=8 {
+            if let Some(square) = access_board(board, row, col) {
+                if let Some(state) = square.piece_state {
+                    if state.piece == Piece::King && state.color == color {
+                        return Some(square);
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+pub fn create_check_mask(board: &Board, color: Color) -> CheckMask {
+    if let Some(king_square) = find_king(board, color) {
+        let mut mask: CheckMask = CheckMask { check_mask: [[false; 8]; 8] };
+
+        if square_is_attacked(king_square, color, board, Some(&mut mask)) {
+            return mask;
+        } else {
+            return CheckMask { check_mask: [[true; 8]; 8] }
+        }
+    } else {
+        return CheckMask { check_mask: [[true; 8]; 8] }
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;

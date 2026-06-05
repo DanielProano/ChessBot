@@ -84,6 +84,10 @@ pub struct Board {
     pub board: [[Square; 8]; 8],
 }
 
+pub struct CheckMask {
+    pub check_mask: [[bool; 8]; 8]
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ColorState {
     pub color: Color,

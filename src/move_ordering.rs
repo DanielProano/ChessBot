@@ -1,6 +1,7 @@
 use crate::moves::{EMPTY_MOVE, Move, get_white_pawn_moves, get_black_pawn_moves, get_bishop_moves, get_knight_moves, get_rook_moves, get_queen_moves, get_king_moves};
 use crate::pieces::*;
 use crate::material::*;
+use crate::utils::*;
 
 pub struct MoveList {
     pub moves: [Move; 218],
@@ -29,33 +30,38 @@ impl MoveList {
     }
 
     pub fn generate_moves(&mut self, board: &Board, color: Color, board_state: BoardState) {
+        let mask = create_check_mask(board, color);
+
         for row in 0..=7 {
             for col in 0..=7 {
                 if let Some(piece_state) = board.board[row][col].piece_state {
                     if piece_state.color == color {
-                        match piece_state.piece {
+                        let mut piece_moves = match piece_state.piece {
                             Piece::Pawn => {
                                 match piece_state.color {
-                                    Color::White => self.extend(get_white_pawn_moves(piece_state, board, board_state)),
-                                    Color::Black => self.extend(get_black_pawn_moves(piece_state, board, board_state))
+                                    Color::White => get_white_pawn_moves(piece_state, board, board_state, &mask),
+                                    Color::Black => get_black_pawn_moves(piece_state, board, board_state, &mask)
                                 }
                             },
                             Piece::Bishop => {
-                                self.extend(get_bishop_moves(piece_state, board))
+                                get_bishop_moves(piece_state, board, &mask)
                             },
                             Piece::Knight => {
-                                self.extend(get_knight_moves(piece_state, board))
+                                get_knight_moves(piece_state, board, &mask)
                             },
                             Piece::Rook => {
-                                self.extend(get_rook_moves(piece_state, board))
+                                get_rook_moves(piece_state, board, &mask)
                             },
                             Piece::Queen => {
-                                self.extend(get_queen_moves(piece_state, board));
+                                get_queen_moves(piece_state, board, &mask)
                             },
                             Piece::King => {
-                                self.extend(get_king_moves(piece_state, board))
+                                get_king_moves(piece_state, board, &mask)
                             }
-                        }
+                        };
+
+                        piece_moves.retain(|mv| is_legal_move(mv, board, color));
+                        self.extend(piece_moves);
                     }
                 }
             }
