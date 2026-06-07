@@ -104,8 +104,8 @@ pub fn square_is_attacked(square: Square, active_color: Color, board: &Board, mu
     }
 
     let pawn_row_offset = match active_color {
-        Color::White => 1, 
-        Color::Black => -1,
+        Color::White => -1, 
+        Color::Black => 1,
     };
 
     let pawn_deltas = [(pawn_row_offset, 1), (pawn_row_offset, -1)];
@@ -263,6 +263,7 @@ pub fn is_legal_move(mv: &Move, board: &Board, color: Color) -> bool {
     let Some(king_square) = find_king(&test_board, color) else {
         return true;
     };
+
     !square_is_attacked(king_square, color, &test_board, None)
 }
 
@@ -287,6 +288,15 @@ pub fn create_check_mask(board: &Board, color: Color) -> CheckMask {
         let mut mask: CheckMask = CheckMask { check_mask: [[false; 8]; 8] };
 
         if square_is_attacked(king_square, color, board, Some(&mut mask)) {
+            // print the whole board so we can see the position
+            for row in (0..8).rev() {
+                for col in 0..8 {
+                    let ch = match board.board[row][col].piece_state {
+                        Some(s) => s.piece.to_char(s.color),
+                        None => ".".to_string(),
+                    };
+                }
+            }
             return mask;
         } else {
             return CheckMask { check_mask: [[true; 8]; 8] }
@@ -393,4 +403,6 @@ mod tests {
         let result = simple_algebraic_to_grid("e4").unwrap();
         assert!(result.piece_state.is_none());
     }
+
+    
 }
