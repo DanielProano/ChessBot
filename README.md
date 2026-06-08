@@ -1,7 +1,7 @@
-![ChessBot_1 0 (1)](https://github.com/user-attachments/assets/cb3cde88-ff6f-4cfb-9981-8e7b9cb6da95)
+# Rust ChessBot 
 
+Hand-written chess movements and rules in Rust, intended to compile to web assembly to live in the frontend on my website! 
 
-# ChessBot
-This Chessbot was made for a very specific and custom setup that never materialized. This was more of a proof of
-concept. However, I was able to not only get Rust and Python to successfully interact, I also created the Min-Max
-Algorithm, implemented iterative deepening, and made a board evaluation algorithm.
+# History 
+
+This is the second iteration of my chessbot, with the first implementing a Chess Engine in Python & Rust, with python intended to be the GUI. However, after developing my website and seeing the results of 1.0, I thought it necessary to rewrite the chess engine for the browser!
