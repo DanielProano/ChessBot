@@ -1,3 +1,5 @@
+use wasm_bindgen::prelude::*;
+
 pub mod search;
 pub mod moves;
 pub mod material;

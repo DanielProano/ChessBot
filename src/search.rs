@@ -3,6 +3,8 @@ use crate::move_ordering::*;
 use crate::pieces::*;
 use crate::moves::*;
 use crate::utils::*;
+use crate::fen::*;
+use wasm_bindgen::prelude::*;
 
 use std::cmp::max;
 use std::i32;
@@ -143,7 +145,7 @@ impl PVS {
         Some(best_move)
     }
 
-    fn update_board_state(&self, board_state: BoardState, mv: &Move, board: &Board) -> BoardState {
+    pub fn update_board_state(&self, board_state: BoardState, mv: &Move, board: &Board) -> BoardState {
         let mut new_state = board_state;
         
         // clear en passant every move, then set it if this was a double pawn push
@@ -211,6 +213,58 @@ impl PVS {
         }
         println!("\nTotal: {}", total);
     }
+}
+
+#[wasm_bindgen]
+pub fn make_move(fen_str: &str, depth: i32) -> Option<String> {
+    let fen = FEN::new(fen_str)?;
+    let board = fen.to_board()?;
+    let board_state = fen.to_board_state()?;
+    let color = board_state.active_color;
+
+    let pvs = PVS;
+    let best = pvs.best_move(depth, &board, color, board_state)?;
+    let new_board_state = pvs.update_board_state(board_state, &best, &board);
+
+    let mut move_list = MoveList::new();
+    move_list.generate_moves(&board, color, board_state);
+    let idx = (0..move_list.move_count)
+        .find(|&i| move_list.moves[i].previous_square.row == best.previous_square.row
+            && move_list.moves[i].previous_square.column == best.previous_square.column
+            && move_list.moves[i].current_square.row == best.current_square.row
+            && move_list.moves[i].current_square.column == best.current_square.column)?;
+    let new_board = pvs.setup_new_board(&board, idx, &move_list);
+
+    let next_color = match color {
+        Color::White => "b",
+        Color::Black => "w",
+    };
+
+    let castling = {
+        let wk = if new_board_state.white_state.castling.castle_kingside { "K" } else { "" };
+        let wq = if new_board_state.white_state.castling.castle_queenside { "Q" } else { "" };
+        let bk = if new_board_state.black_state.castling.castle_kingside { "k" } else { "" };
+        let bq = if new_board_state.black_state.castling.castle_queenside { "q" } else { "" };
+        let rights = format!("{}{}{}{}", wk, wq, bk, bq);
+        if rights.is_empty() { "-".to_string() } else { rights }
+    };
+
+    let en_passant = match new_board_state.white_state.en_passant
+        .or(new_board_state.black_state.en_passant)
+    {
+        Some(sq) => {
+            let col_char = (b'a' + sq.column as u8 - 1) as char;
+            format!("{}{}", col_char, sq.row)
+        },
+        None => "-".to_string(),
+    };
+
+    let sections: Vec<&str> = fen_str.split(' ').collect();
+    let fullmove: usize = sections[5].parse().unwrap_or(1);
+    let halfmove: usize = sections[4].parse().unwrap_or(0);
+
+    Some(format!("{} {} {} {} {} {}",
+        FEN::from_board(&new_board), next_color, castling, en_passant, halfmove, fullmove))
 }
 
 #[cfg(test)]
