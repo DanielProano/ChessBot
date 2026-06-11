@@ -160,7 +160,7 @@ pub fn create(
 pub fn get_pawn_moves(
     state: PieceState,
     board: &Board,
-    board_state: BoardState,
+    board_state: &BoardState,
     check_mask: &CheckMask,
 ) -> Vec<Move> {
     if state.piece != Piece::Pawn {
@@ -177,7 +177,7 @@ pub fn get_pawn_moves(
 pub fn get_white_pawn_moves(
     state: PieceState,
     board: &Board,
-    mut board_state: BoardState,
+    board_state: &BoardState,
     check_mask: &CheckMask,
 ) -> Vec<Move> {
     let mut moves: Vec<Move> = vec![];
@@ -193,7 +193,6 @@ pub fn get_white_pawn_moves(
             if check_mask.check_mask[target_square.row - 1][target_square.column - 1] {
                 if inbetween_square.piece_state.is_none() && target_square.piece_state.is_none() {
                     add_pawn_move(&mut moves, state, square, cur_row + 2, cur_col, None);
-                    board_state.white_state.en_passant = Some(target_square);
                 }
             }
         }
@@ -207,7 +206,6 @@ pub fn get_white_pawn_moves(
             if check_mask.check_mask[target_square.row - 1][target_square.column - 1] {
                 if target_square.piece_state.is_none() {
                     add_pawn_move(&mut moves, state, square, cur_row + 1, cur_col, None);
-                    board_state.white_state.en_passant = None;
                 }
             }
         }
@@ -230,16 +228,15 @@ pub fn get_white_pawn_moves(
                         cur_col - 1,
                         Some(target_piece),
                     );
-                    board_state.white_state.en_passant = None;
                 } else if target_square.piece_state.is_none() {
                     //Special en passant
 
-                    if let (Some(enemy_square), Some(special_square)) = (
+                    if let (Some(en_passant_square), Some(enemy_square)) = (
                         board_state.black_state.en_passant,
                         access_board(board, cur_row, cur_col - 1),
                     ) {
-                        if let Some(target_piece) = special_square.piece_state {
-                            if enemy_square.row == special_square.row && enemy_square.column == special_square.column {
+                        if let Some(target_piece) = enemy_square.piece_state {
+                            if en_passant_square.row == target_square.row && en_passant_square.column == target_square.column {
                                 add_pawn_move(
                                     &mut moves,
                                     state,
@@ -248,7 +245,6 @@ pub fn get_white_pawn_moves(
                                     cur_col - 1,
                                     Some(target_piece),
                                 );
-                                board_state.black_state.en_passant = None;
                             }
                         }
                     }
@@ -272,16 +268,15 @@ pub fn get_white_pawn_moves(
                         cur_col + 1,
                         Some(target_piece),
                     );
-                    board_state.white_state.en_passant = None;
                 } else if target_square.piece_state.is_none() {
                     //Special en passant
 
-                    if let (Some(enemy_square), Some(special_square)) = (
+                    if let (Some(en_passant_square), Some(enemy_square)) = (
                         board_state.black_state.en_passant,
                         access_board(board, cur_row, cur_col + 1),
                     ) {
-                        if let Some(target_piece) = special_square.piece_state {
-                            if enemy_square.row == special_square.row && enemy_square.column == special_square.column {
+                        if let Some(target_piece) = en_passant_square.piece_state {
+                            if enemy_square.row == target_square.row && enemy_square.column == target_square.column {
                                 add_pawn_move(
                                     &mut moves,
                                     state,
@@ -290,7 +285,6 @@ pub fn get_white_pawn_moves(
                                     cur_col + 1,
                                     Some(target_piece),
                                 );
-                                board_state.black_state.en_passant = None;
                             }
                         }
                     }
@@ -305,7 +299,7 @@ pub fn get_white_pawn_moves(
 pub fn get_black_pawn_moves(
     state: PieceState,
     board: &Board,
-    mut board_state: BoardState,
+    board_state: &BoardState,
     check_mask: &CheckMask,
 ) -> Vec<Move> {
     let mut moves: Vec<Move> = vec![];
@@ -321,7 +315,6 @@ pub fn get_black_pawn_moves(
             if check_mask.check_mask[target_square.row - 1][target_square.column - 1] {
                 if inbetween_square.piece_state.is_none() && target_square.piece_state.is_none() {
                     add_pawn_move(&mut moves, state, square, cur_row - 2, cur_col, None);
-                    board_state.black_state.en_passant = Some(target_square);
                 }
             }
         }
@@ -335,7 +328,6 @@ pub fn get_black_pawn_moves(
             if check_mask.check_mask[target_square.row - 1][target_square.column - 1] {
                 if target_square.piece_state.is_none() {
                     add_pawn_move(&mut moves, state, square, cur_row - 1, cur_col, None);
-                    board_state.black_state.en_passant = None;
                 }
             }
         }
@@ -358,16 +350,15 @@ pub fn get_black_pawn_moves(
                         cur_col - 1,
                         Some(target_piece),
                     );
-                    board_state.black_state.en_passant = None;
                 } else if target_square.piece_state.is_none() {
                     //Special en passant
 
-                    if let (Some(enemy_square), Some(special_square)) = (
+                    if let (Some(en_passant_square), Some(enemy_square)) = (
                         board_state.white_state.en_passant,
                         access_board(board, cur_row, cur_col - 1),
                     ) {
-                        if let Some(target_piece) = special_square.piece_state {
-                            if enemy_square.row == special_square.row && enemy_square.column == special_square.column {
+                        if let Some(target_piece) = en_passant_square.piece_state {
+                            if enemy_square.row == target_square.row && enemy_square.column == target_square.column {
                                 add_pawn_move(
                                     &mut moves,
                                     state,
@@ -376,7 +367,6 @@ pub fn get_black_pawn_moves(
                                     cur_col - 1,
                                     Some(target_piece),
                                 );
-                                board_state.black_state.en_passant = None;
                             }
                         }
                     }
@@ -402,21 +392,15 @@ pub fn get_black_pawn_moves(
                         cur_col + 1,
                         Some(target_piece),
                     );
-                    board_state.black_state.en_passant = None;
                 } else if target_square.piece_state.is_none() {
                     //Special en passant
 
-                    if let (Some(enemy_square), Some(special_square)) = (
+                    if let (Some(en_passant_square), Some(enemy_square)) = (
                         board_state.white_state.en_passant,
                         access_board(board, cur_row, cur_col + 1),
                     ) {
-                        if let Some(target_piece) = special_square.piece_state {
-                            if enemy_square.row == special_square.row && enemy_square.column == special_square.column {
-                                debug_assert_eq!(
-                                    target_piece.location,
-                                    (special_square.row, special_square.column),
-                                    "piece location mismatch on board"
-                                );
+                        if let Some(target_piece) = en_passant_square.piece_state {
+                            if enemy_square.row == target_square.row && enemy_square.column == target_square.column {
                                 add_pawn_move(
                                     &mut moves,
                                     state,
@@ -425,7 +409,6 @@ pub fn get_black_pawn_moves(
                                     cur_col + 1,
                                     Some(target_piece),
                                 );
-                                board_state.black_state.en_passant = None;
                             }
                         }
                     }
@@ -1103,7 +1086,7 @@ mod tests {
         let mut board = empty_board();
         place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
         let state = board.board[1][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board, empty_board_state(), &full_check_mask());
+        let moves = get_white_pawn_moves(state, &board, &empty_board_state(), &full_check_mask());
         assert!(
             moves
                 .iter()
@@ -1116,7 +1099,7 @@ mod tests {
         let mut board = empty_board();
         place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
         let state = board.board[1][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board, empty_board_state(), &full_check_mask());
+        let moves = get_white_pawn_moves(state, &board, &empty_board_state(), &full_check_mask());
         assert!(
             moves
                 .iter()
@@ -1130,7 +1113,7 @@ mod tests {
         place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
         place_piece(&mut board, 3, 4, Piece::Pawn, Color::Black);
         let state = board.board[1][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board, empty_board_state(), &full_check_mask());
+        let moves = get_white_pawn_moves(state, &board, &empty_board_state(), &full_check_mask());
         assert!(moves.is_empty());
     }
 
@@ -1140,7 +1123,7 @@ mod tests {
         place_piece(&mut board, 2, 4, Piece::Pawn, Color::White);
         place_piece(&mut board, 3, 5, Piece::Pawn, Color::Black);
         let state = board.board[1][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board, empty_board_state(), &full_check_mask());
+        let moves = get_white_pawn_moves(state, &board, &empty_board_state(), &full_check_mask());
         assert!(moves.iter().any(|m| m.current_square.row == 3
             && m.current_square.column == 5
             && m.captured_piece.is_some()));
@@ -1151,7 +1134,7 @@ mod tests {
         let mut board = empty_board();
         place_piece(&mut board, 7, 4, Piece::Pawn, Color::White);
         let state = board.board[6][3].piece_state.unwrap();
-        let moves = get_white_pawn_moves(state, &board, empty_board_state(), &full_check_mask());
+        let moves = get_white_pawn_moves(state, &board, &empty_board_state(), &full_check_mask());
         assert_eq!(moves.iter().filter(|m| m.promotion.is_some()).count(), 4);
     }
 
@@ -1160,7 +1143,7 @@ mod tests {
         let mut board = empty_board();
         place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
         let state = board.board[6][3].piece_state.unwrap();
-        let moves = get_black_pawn_moves(state, &board, empty_board_state(), &full_check_mask());
+        let moves = get_black_pawn_moves(state, &board, &empty_board_state(), &full_check_mask());
         assert!(
             moves
                 .iter()
@@ -1173,7 +1156,7 @@ mod tests {
         let mut board = empty_board();
         place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
         let state = board.board[6][3].piece_state.unwrap();
-        let moves = get_black_pawn_moves(state, &board, empty_board_state(), &full_check_mask());
+        let moves = get_black_pawn_moves(state, &board, &empty_board_state(), &full_check_mask());
         assert!(
             moves
                 .iter()
@@ -1187,7 +1170,7 @@ mod tests {
         place_piece(&mut board, 7, 4, Piece::Pawn, Color::Black);
         place_piece(&mut board, 6, 5, Piece::Pawn, Color::White);
         let state = board.board[6][3].piece_state.unwrap();
-        let moves = get_black_pawn_moves(state, &board, empty_board_state(), &full_check_mask());
+        let moves = get_black_pawn_moves(state, &board, &empty_board_state(), &full_check_mask());
         assert!(moves.iter().any(|m| m.current_square.row == 6
             && m.current_square.column == 5
             && m.captured_piece.is_some()));
@@ -1500,7 +1483,7 @@ mod tests {
 
         let state = board.board[4][3].piece_state.unwrap();
         let mask = full_check_mask();
-        let moves = get_white_pawn_moves(state, &board, board_state, &mask);
+        let moves = get_white_pawn_moves(state, &board, &board_state, &mask);
         assert!(
             moves.iter().any(|m| m.current_square.row == 6
                 && m.current_square.column == 3
@@ -1524,7 +1507,7 @@ mod tests {
 
         let state = board.board[3][3].piece_state.unwrap();
         let mask = full_check_mask();
-        let moves = get_black_pawn_moves(state, &board, board_state, &mask);
+        let moves = get_black_pawn_moves(state, &board, &board_state, &mask);
         assert!(
             moves.iter().any(|m| m.current_square.row == 3
                 && m.current_square.column == 5
@@ -1639,14 +1622,14 @@ fn test_black_pawn_double_push_after_qh5() {
 
     // g7 pawn should have 2 moves: g6 and g5
     let g7_pawn = board.board[6][6].piece_state.unwrap();
-    let g7_moves = get_black_pawn_moves(g7_pawn, &board, board_state, &mask);
+    let g7_moves = get_black_pawn_moves(g7_pawn, &board, &board_state, &mask);
     assert_eq!(g7_moves.len(), 2, "g7 pawn should have 2 moves, got {}: {:?}",
         g7_moves.len(),
         g7_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
 
     // h7 pawn should have 2 moves: h6 and h5
     let h7_pawn = board.board[6][7].piece_state.unwrap();
-    let h7_moves = get_black_pawn_moves(h7_pawn, &board, board_state, &mask);
+    let h7_moves = get_black_pawn_moves(h7_pawn, &board, &board_state, &mask);
     assert_eq!(h7_moves.len(), 2, "h7 pawn should have 2 moves, got {}: {:?}",
         h7_moves.len(),
         h7_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
@@ -1686,7 +1669,7 @@ fn test_g7_pawn_moves_after_qh5() {
     // queen on h5 attacks g6 but that doesn't affect g7 pawn's moves
     // since the black king on e8 is not exposed by g7 moving
     let g7_pawn = board.board[6][6].piece_state.unwrap();
-    let g7_moves = get_black_pawn_moves(g7_pawn, &board, board_state, &mask);
+    let g7_moves = get_black_pawn_moves(g7_pawn, &board, &board_state, &mask);
     println!("g7 pawn moves: {:?}", 
         g7_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
     assert_eq!(g7_moves.len(), 2, "g7 pawn should have g6 and g5");
@@ -1729,7 +1712,7 @@ fn test_black_move_breakdown_after_qh5() {
             if let Some(piece_state) = board.board[row][col].piece_state {
                 if piece_state.color == Color::Black {
                     let mut moves: Vec<Move> = match piece_state.piece {
-                        Piece::Pawn => get_black_pawn_moves(piece_state, &board, board_state, &mask),
+                        Piece::Pawn => get_black_pawn_moves(piece_state, &board, &board_state, &mask),
                         Piece::Knight => get_knight_moves(piece_state, &board, &mask),
                         Piece::Bishop => get_bishop_moves(piece_state, &board, &mask),
                         Piece::Rook => get_rook_moves(piece_state, &board, &mask),
@@ -1794,7 +1777,7 @@ fn test_black_move_breakdown_after_qh5_verbose() {
             if let Some(piece_state) = board.board[row][col].piece_state {
                 if piece_state.color == Color::Black {
                     let mut moves: Vec<Move> = match piece_state.piece {
-                        Piece::Pawn => get_black_pawn_moves(piece_state, &board, board_state, &mask),
+                        Piece::Pawn => get_black_pawn_moves(piece_state, &board, &board_state, &mask),
                         Piece::Knight => get_knight_moves(piece_state, &board, &mask),
                         Piece::Bishop => get_bishop_moves(piece_state, &board, &mask),
                         Piece::Rook => get_rook_moves(piece_state, &board, &mask),
