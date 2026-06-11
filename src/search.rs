@@ -670,61 +670,6 @@ mod tests {
         assert_ne!(Piece::King, Piece::Queen);
     }
 
-     #[test]
-    fn perft_depth_1() {
-        let pvs = PVS;
-        let board_state = empty_board_state();
-        assert_eq!(pvs.perft(&START_BOARD, Color::White, 1, &board_state), 20);
-    }
-
-    #[test]
-    fn perft_depth_2() {
-        let pvs = PVS;
-        let board_state = empty_board_state();
-        assert_eq!(pvs.perft(&START_BOARD, Color::White, 2, &board_state), 400);
-    }
-
-    #[test]
-    fn perft_depth_3() {
-        let pvs = PVS;
-        let board_state = empty_board_state();
-        assert_eq!(pvs.perft(&START_BOARD, Color::White, 3, &board_state), 8902);
-    }
-
-    // #[test]
-    // fn perft_depth_4() {
-    //     let pvs = PVS;
-    //     let board_state = empty_board_state();
-    //     assert_eq!(pvs.perft(&START_BOARD, Color::White, 4, board_state), 197281);
-    // }
-
-    // #[test]
-    // fn perft_depth_5() {
-    //     let pvs = PVS;
-    //     let board_state = empty_board_state();
-    //     assert_eq!(pvs.perft(&START_BOARD, Color::White, 5, board_state), 4865609)
-    // }
-
-    #[test]
-    fn perft_divide_test_depth4() {
-        let pvs = PVS;
-        let board_state = empty_board_state();
-        
-        pvs.perft_divide(&START_BOARD, Color::White, 4, &board_state);
-        
-        assert_eq!(pvs.perft(&START_BOARD, Color::White, 4, &board_state), 197281);
-    }
-
-    // #[test]
-    // fn perft_test_depth5() {
-    //     let pvs = PVS;
-    //     let board_state = empty_board_state();
-
-    //     pvs.perft_divide(&START_BOARD, Color::White, 5, board_state);
-
-    //     assert_eq!(pvs.perft(&START_BOARD, Color::White, 5, board_state), 4865609);
-    // }
-
     #[test]
     fn perft_after_e2e4() {
         let pvs = PVS;
@@ -742,7 +687,6 @@ mod tests {
 
     #[test]
     fn test_move_count_after_e4_e5() {
-        let pvs = PVS;
         let mut board = START_BOARD.clone();
         
         // apply e2e4
@@ -1252,83 +1196,138 @@ fn test_black_pieces_after_e4_e6_qh5_breakdown() {
         ng8_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
 }
 
-#[test]
-fn test_check_mask_not_in_check_is_all_true() {
-    // When the king is NOT in check, the check mask should be all true
-    // (every square is a valid destination)
-    let mut board = START_BOARD.clone();
-    board.board[1][4].piece_state = None;
-    board.board[3][4] = Square { row: 4, column: 5, piece_state: Some(PieceState {
-        color: Color::White, piece: Piece::Pawn,
-        location: (4, 5), has_moved: true, dead: false
-    })};
-    board.board[6][4].piece_state = None;
-    board.board[5][4] = Square { row: 6, column: 5, piece_state: Some(PieceState {
-        color: Color::Black, piece: Piece::Pawn,
-        location: (6, 5), has_moved: true, dead: false
-    })};
-    board.board[0][3].piece_state = None;
-    board.board[4][7] = Square { row: 5, column: 8, piece_state: Some(PieceState {
-        color: Color::White, piece: Piece::Queen,
-        location: (5, 8), has_moved: true, dead: false
-    })};
+    #[test]
+    fn test_check_mask_not_in_check_is_all_true() {
+        // When the king is NOT in check, the check mask should be all true
+        // (every square is a valid destination)
+        let mut board = START_BOARD.clone();
+        board.board[1][4].piece_state = None;
+        board.board[3][4] = Square { row: 4, column: 5, piece_state: Some(PieceState {
+            color: Color::White, piece: Piece::Pawn,
+            location: (4, 5), has_moved: true, dead: false
+        })};
+        board.board[6][4].piece_state = None;
+        board.board[5][4] = Square { row: 6, column: 5, piece_state: Some(PieceState {
+            color: Color::Black, piece: Piece::Pawn,
+            location: (6, 5), has_moved: true, dead: false
+        })};
+        board.board[0][3].piece_state = None;
+        board.board[4][7] = Square { row: 5, column: 8, piece_state: Some(PieceState {
+            color: Color::White, piece: Piece::Queen,
+            location: (5, 8), has_moved: true, dead: false
+        })};
 
-    let mask = create_check_mask(&board, Color::Black);
+        let mask = create_check_mask(&board, Color::Black);
 
-    // Qh5 does not attack the black king, so black is not in check
-    // Therefore every square should be true in the mask
-    let all_true = mask.check_mask.iter().flatten().all(|&b| b);
-    assert!(all_true, 
-        "check mask should be all true when not in check, but some squares are false: {:?}",
-        mask.check_mask);
-}
+        // Qh5 does not attack the black king, so black is not in check
+        // Therefore every square should be true in the mask
+        let all_true = mask.check_mask.iter().flatten().all(|&b| b);
+        assert!(all_true, 
+            "check mask should be all true when not in check, but some squares are false: {:?}",
+            mask.check_mask);
+    }
 
-#[test]
-fn test_perft_after_e4_f5_depth2() {
-    let pvs = PVS;
-    let mut board = START_BOARD.clone();
-    // apply e2e4
-    board.board[1][4].piece_state = None;
-    board.board[3][4] = Square { row: 4, column: 5, piece_state: Some(PieceState {
-        color: Color::White, piece: Piece::Pawn,
-        location: (4, 5), has_moved: true, dead: false
-    })};
-    // apply f7f5
-    board.board[6][5].piece_state = None;
-    board.board[4][5] = Square { row: 5, column: 6, piece_state: Some(PieceState {
-        color: Color::Black, piece: Piece::Pawn,
-        location: (5, 6), has_moved: true, dead: false
-    })};
-    let board_state = empty_board_state();
+    #[test]
+    fn test_perft_after_e4_f5_depth2() {
+        let pvs = PVS;
+        let mut board = START_BOARD.clone();
+        // apply e2e4
+        board.board[1][4].piece_state = None;
+        board.board[3][4] = Square { row: 4, column: 5, piece_state: Some(PieceState {
+            color: Color::White, piece: Piece::Pawn,
+            location: (4, 5), has_moved: true, dead: false
+        })};
+        // apply f7f5
+        board.board[6][5].piece_state = None;
+        board.board[4][5] = Square { row: 5, column: 6, piece_state: Some(PieceState {
+            color: Color::Black, piece: Piece::Pawn,
+            location: (5, 6), has_moved: true, dead: false
+        })};
+        let board_state = empty_board_state();
 
-    // get stockfish value for this position
-    // position startpos moves e2e4 f7f5
-    // go perft 2
-    let result = pvs.perft(&board, Color::White, 2, &board_state);
-    println!("perft(2) after 1.e4 f5: {}", result);
-    assert_eq!(result, 623, "perft(2) after 1.e4 f5 should match stockfish");
-}
+        // get stockfish value for this position
+        // position startpos moves e2e4 f7f5
+        // go perft 2
+        let result = pvs.perft(&board, Color::White, 2, &board_state);
+        println!("perft(2) after 1.e4 f5: {}", result);
+        assert_eq!(result, 623, "perft(2) after 1.e4 f5 should match stockfish");
+    }
 
-#[test]
-fn test_perft_after_e4_f6_depth2() {
-    let pvs = PVS;
-    let mut board = START_BOARD.clone();
-    // apply e2e4
-    board.board[1][4].piece_state = None;
-    board.board[3][4] = Square { row: 4, column: 5, piece_state: Some(PieceState {
-        color: Color::White, piece: Piece::Pawn,
-        location: (4, 5), has_moved: true, dead: false
-    })};
-    // apply f7f6
-    board.board[6][5].piece_state = None;
-    board.board[5][5] = Square { row: 6, column: 6, piece_state: Some(PieceState {
-        color: Color::Black, piece: Piece::Pawn,
-        location: (6, 6), has_moved: true, dead: false
-    })};
-    let board_state = empty_board_state();
+    #[test]
+    fn test_perft_after_e4_f6_depth2() {
+        let pvs = PVS;
+        let mut board = START_BOARD.clone();
+        // apply e2e4
+        board.board[1][4].piece_state = None;
+        board.board[3][4] = Square { row: 4, column: 5, piece_state: Some(PieceState {
+            color: Color::White, piece: Piece::Pawn,
+            location: (4, 5), has_moved: true, dead: false
+        })};
+        // apply f7f6
+        board.board[6][5].piece_state = None;
+        board.board[5][5] = Square { row: 6, column: 6, piece_state: Some(PieceState {
+            color: Color::Black, piece: Piece::Pawn,
+            location: (6, 6), has_moved: true, dead: false
+        })};
+        let board_state = empty_board_state();
 
-    let result = pvs.perft(&board, Color::White, 2, &board_state);
-    println!("perft(2) after 1.e4 f6: {}", result);
-    assert_eq!(result, 547, "perft(2) after 1.e4 f6 should match stockfish");
-}
+        let result = pvs.perft(&board, Color::White, 2, &board_state);
+        println!("perft(2) after 1.e4 f6: {}", result);
+        assert_eq!(result, 547, "perft(2) after 1.e4 f6 should match stockfish");
+    }
+
+     #[test]
+    fn perft_depth_1() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 1, &board_state), 20);
+    }
+
+    #[test]
+    fn perft_depth_2() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 2, &board_state), 400);
+    }
+
+    #[test]
+    fn perft_depth_3() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 3, &board_state), 8902);
+    }
+
+    #[test]
+    fn perft_depth_4() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 4, &board_state), 197281);
+    }
+
+    // #[test]
+    // fn perft_depth_5() {
+    //     let pvs = PVS;
+    //     let board_state = empty_board_state();
+    //     assert_eq!(pvs.perft(&START_BOARD, Color::White, 5, &board_state), 4865609)
+    // }
+
+    // #[test]
+    // fn perft_divide_test_depth4() {
+    //     let pvs = PVS;
+    //     let board_state = empty_board_state();
+        
+    //     pvs.perft_divide(&START_BOARD, Color::White, 4, &board_state);
+        
+    //     assert_eq!(pvs.perft(&START_BOARD, Color::White, 4, &board_state), 197281);
+    // }
+
+    #[test]
+    fn perft_test_depth5() {
+        let pvs = PVS;
+        let board_state = empty_board_state();
+
+        pvs.perft_divide(&START_BOARD, Color::White, 5, &board_state);
+
+        assert_eq!(pvs.perft(&START_BOARD, Color::White, 5, &board_state), 4865609);
+    }
 }

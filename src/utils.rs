@@ -1,3 +1,5 @@
+use core::num;
+
 use crate::pieces::*;
 use crate::moves::*;
 
@@ -72,7 +74,6 @@ pub fn in_bounds(row: usize, col: usize) -> bool {
 pub fn square_is_attacked(square: Square, active_color: Color, board: &Board) -> bool {
     let cur_row = square.row as i32;
     let cur_col = square.column as i32;
-    let mut output = false;
 
     for &(row, col) in &KNIGHT_DELTAS {
         let target_row = (cur_row + row) as usize;
@@ -82,7 +83,7 @@ pub fn square_is_attacked(square: Square, active_color: Color, board: &Board) ->
             if let Some(square) = access_board(&board, target_row, target_col) {
                 if let Some(state) = square.piece_state {
                     if state.piece == Piece::Knight && state.color != active_color {
-                        output = true;
+                        return true;
                     }
                 }
             }
@@ -254,15 +255,161 @@ pub fn create_check_mask(board: &Board, color: Color) -> CheckMask {
         return CheckMask { check_mask: [[true; 8]; 8] };
     };
 
-    let mut mask = CheckMask { check_mask: [[false; 8]; 8] };
-
-    if square_is_attacked(king_square, color, board) {
-        mask
-    } else {
-        CheckMask { check_mask: [[true; 8]; 8] }
-    }
+   
+    get_checks(king_square, color, board)
 }
 
+pub fn get_checks(king_square: Square, active_color: Color, board: &Board, ) -> CheckMask {
+    if king_square.piece_state.is_none() {
+        return CheckMask { check_mask: [[true; 8]; 8] }
+    }
+
+    let cur_row = king_square.row;
+    let cur_col = king_square.column;
+    let mut num_attacking_pieces = 0;
+    let mut mask = CheckMask { check_mask: [[false; 8]; 8] };
+
+    for &(row, col) in &KNIGHT_DELTAS {
+        let target_row = (cur_row as i32 + row) as usize;
+        let target_col = (cur_col as i32 + col) as usize;
+
+        if in_bounds(target_row, target_col) {
+            if let Some(square) = access_board(&board, target_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if state.piece == Piece::Knight && state.color != active_color {
+                        mask.check_mask[target_row - 1][target_col - 1] = true;
+                        num_attacking_pieces += 1;
+                    }
+                }
+            }
+        }
+    }
+
+
+    for target_row in (cur_row + 1)..=8 {
+        if in_bounds(target_row, cur_col) {
+            if let Some(square) = access_board(board, target_row, cur_col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
+                        for trace_row in cur_row..=target_row {
+                            mask.check_mask[trace_row - 1][cur_col - 1] = true;
+                        }
+                        num_attacking_pieces += 1;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    for target_row in (0..cur_row).rev() {
+        if in_bounds(target_row, cur_col) {
+            if let Some(square) = access_board(board, target_row, cur_col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
+                        for trace_row in target_row..=cur_row {
+                            mask.check_mask[trace_row - 1][cur_col - 1] = true;
+                        }
+                        num_attacking_pieces += 1;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    for target_col in (cur_col + 1)..=8 {
+        if in_bounds(cur_row, target_col) {
+            if let Some(square) = access_board(board, cur_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
+                        for trace_col in cur_col..=target_col {
+                            mask.check_mask[cur_row - 1][trace_col - 1] = true;
+                        }
+                        num_attacking_pieces += 1;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    for target_col in (0..cur_col).rev() {
+        if in_bounds(cur_row, target_col) {
+            if let Some(square) = access_board(board, cur_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Rook || state.piece == Piece::Queen) && state.color != active_color {
+                        for trace_col in target_col..=cur_col {
+                            mask.check_mask[cur_row - 1][trace_col - 1] = true;
+                        }
+                        num_attacking_pieces += 1;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    for &(r_idx, c_idx) in &BISHOP_DELTAS {
+        for multiplier in 1..=8 {
+            let target_row = (cur_row as i32 + r_idx * multiplier) as usize;
+            let target_col = (cur_col as i32 + c_idx * multiplier) as usize;
+
+            if !in_bounds(target_row, target_col) {
+                break;
+            }
+
+            if let Some(square) = access_board(board, target_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if (state.piece == Piece::Queen || state.piece == Piece::Bishop) && state.color != active_color {
+                        mask.check_mask[(cur_row - 1) as usize][(cur_col - 1) as usize] = true;
+                        
+                        for step in 1..=multiplier {
+                            let trace_row = (cur_row as i32 + r_idx * step) as usize;
+                            let trace_col = (cur_col as i32 + c_idx * step) as usize;
+                            mask.check_mask[trace_row - 1][trace_col - 1] = true;
+                        }
+                        num_attacking_pieces += 1;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    let pawn_row_offset: i32 = match active_color {
+        Color::White => -1, 
+        Color::Black => 1,
+    };
+
+    let pawn_deltas = [(pawn_row_offset, 1), (pawn_row_offset, -1)];
+
+    for &(row, col) in &pawn_deltas {
+        let target_row = (cur_row as i32 + row) as usize;
+        let target_col = (cur_col as i32 + col) as usize;
+
+        if in_bounds(target_row, target_col) {
+            if let Some(square) = access_board(board, target_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if state.piece == Piece::Pawn && state.color != active_color {
+                        mask.check_mask[target_row - 1][target_col - 1] = true;
+                        num_attacking_pieces += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    if num_attacking_pieces == 0 {
+        return CheckMask { check_mask: [[true; 8]; 8] };
+    }
+
+    if num_attacking_pieces > 1 {
+        return CheckMask { check_mask: [[false; 8]; 8] };
+    }
+
+    mask
+}
 
 #[cfg(test)]
 mod tests {

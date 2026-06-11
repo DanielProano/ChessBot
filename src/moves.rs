@@ -288,8 +288,8 @@ pub fn get_white_pawn_moves(
                         board_state.black_state.en_passant,
                         access_board(board, cur_row, cur_col + 1),
                     ) {
-                        if let Some(target_piece) = en_passant_square.piece_state {
-                            if enemy_square.row == target_square.row && enemy_square.column == target_square.column {
+                        if let Some(target_piece) = enemy_square.piece_state {
+                            if en_passant_square.row == target_square.row && en_passant_square.column == target_square.column {
                                 add_pawn_move(
                                     &mut moves,
                                     state,
@@ -370,8 +370,8 @@ pub fn get_black_pawn_moves(
                         board_state.white_state.en_passant,
                         access_board(board, cur_row, cur_col - 1),
                     ) {
-                        if let Some(target_piece) = en_passant_square.piece_state {
-                            if enemy_square.row == target_square.row && enemy_square.column == target_square.column {
+                        if let Some(target_piece) = enemy_square.piece_state {
+                            if en_passant_square.row == target_square.row && en_passant_square.column == target_square.column {
                                 add_pawn_move(
                                     &mut moves,
                                     state,
@@ -412,8 +412,8 @@ pub fn get_black_pawn_moves(
                         board_state.white_state.en_passant,
                         access_board(board, cur_row, cur_col + 1),
                     ) {
-                        if let Some(target_piece) = en_passant_square.piece_state {
-                            if enemy_square.row == target_square.row && enemy_square.column == target_square.column {
+                        if let Some(target_piece) = enemy_square.piece_state {
+                            if en_passant_square.row == target_square.row && en_passant_square.column == target_square.column {
                                 add_pawn_move(
                                     &mut moves,
                                     state,
@@ -1477,7 +1477,7 @@ mod tests {
         let mut board_state = empty_board_state();
         // black just double pushed to col 3, row 5 — en passant target is row 6, col 3
         board_state.black_state.en_passant = Some(Square {
-            row: 5,
+            row: 6,
             column: 3,
             piece_state: board.board[4][2].piece_state,
         });
@@ -1501,7 +1501,7 @@ mod tests {
 
         let mut board_state = empty_board_state();
         board_state.white_state.en_passant = Some(Square {
-            row: 4,
+            row: 3,
             column: 5,
             piece_state: board.board[3][4].piece_state,
         });
@@ -1597,51 +1597,43 @@ mod tests {
             king_moves.len(),
             king_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
     }
-
+    
     #[test]
-fn test_black_pawn_double_push_after_qh5() {
-    let mut board = START_BOARD.clone();
-    board.board[1][4].piece_state = None;
-    board.board[3][4] = Square { row: 4, column: 5, piece_state: Some(PieceState {
-        color: Color::White, piece: Piece::Pawn,
-        location: (4, 5), has_moved: true, dead: false
-    })};
-    board.board[6][4].piece_state = None;
-    board.board[5][4] = Square { row: 6, column: 5, piece_state: Some(PieceState {
-        color: Color::Black, piece: Piece::Pawn,
-        location: (6, 5), has_moved: true, dead: false
-    })};
-    board.board[0][3].piece_state = None;
-    board.board[4][7] = Square { row: 5, column: 8, piece_state: Some(PieceState {
-        color: Color::White, piece: Piece::Queen,
-        location: (5, 8), has_moved: true, dead: false
-    })};
+    fn test_black_pawn_double_push_after_qh5() {
+        let mut board = START_BOARD.clone();
+        board.board[1][4].piece_state = None;
+        board.board[3][4] = Square { row: 4, column: 5, piece_state: Some(PieceState {
+            color: Color::White, piece: Piece::Pawn,
+            location: (4, 5), has_moved: true, dead: false
+        })};
+        board.board[6][4].piece_state = None;
+        board.board[5][4] = Square { row: 6, column: 5, piece_state: Some(PieceState {
+            color: Color::Black, piece: Piece::Pawn,
+            location: (6, 5), has_moved: true, dead: false
+        })};
+        board.board[0][3].piece_state = None;
+        board.board[4][7] = Square { row: 5, column: 8, piece_state: Some(PieceState {
+            color: Color::White, piece: Piece::Queen,
+            location: (5, 8), has_moved: true, dead: false
+        })};
 
-    let board_state = empty_board_state();
-    let mask = create_check_mask(&board, Color::Black);
+        let board_state = empty_board_state();
+        let mask = create_check_mask(&board, Color::Black);
 
-    // g7 pawn should have 2 moves: g6 and g5
-    let g7_pawn = board.board[6][6].piece_state.unwrap();
-    let g7_moves = get_black_pawn_moves(g7_pawn, &board, &board_state, &mask);
-    assert_eq!(g7_moves.len(), 2, "g7 pawn should have 2 moves, got {}: {:?}",
-        g7_moves.len(),
-        g7_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
+        // g7 pawn should have 2 moves: g6 and g5
+        let g7_pawn = board.board[6][6].piece_state.unwrap();
+        let g7_moves = get_black_pawn_moves(g7_pawn, &board, &board_state, &mask);
+        assert_eq!(g7_moves.len(), 2, "g7 pawn should have 2 moves, got {}: {:?}",
+            g7_moves.len(),
+            g7_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
 
-    // h7 pawn should have 2 moves: h6 and h5
-    let h7_pawn = board.board[6][7].piece_state.unwrap();
-    let h7_moves = get_black_pawn_moves(h7_pawn, &board, &board_state, &mask);
-    assert_eq!(h7_moves.len(), 2, "h7 pawn should have 2 moves, got {}: {:?}",
-        h7_moves.len(),
-        h7_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
-
-    // specifically verify h5 double push is legal (queen is on h5 but that's white's piece,
-    // black pawn moving to h5 would capture it — that should be illegal since h5 has a white piece
-    // so h7 pawn should only have h6 as a single push, NOT h5)
-    // Wait — h7->h5 is blocked by the queen on h5. So h7 pawn has only 1 move: h6
-    assert_eq!(h7_moves.len(), 1, "h7 pawn should have only h6 (h5 blocked by queen), got {}: {:?}",
-        h7_moves.len(),
-        h7_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
-}
+        // h7 pawn has only h6 — double push blocked by white queen on h5
+        let h7_pawn = board.board[6][7].piece_state.unwrap();
+        let h7_moves = get_black_pawn_moves(h7_pawn, &board, &board_state, &mask);
+        assert_eq!(h7_moves.len(), 1, "h7 pawn should have only h6 (h5 blocked by queen), got {}: {:?}",
+            h7_moves.len(),
+            h7_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
+    }
 
 #[test]
 fn test_g7_pawn_moves_after_qh5() {
