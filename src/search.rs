@@ -252,8 +252,13 @@ pub fn make_move(fen_str: &str, depth: i32) -> Option<String> {
         .or(new_board_state.black_state.en_passant)
     {
         Some(sq) => {
+            let fen_row = if new_board_state.white_state.en_passant.is_some() {
+                sq.row - 1
+            } else {
+                sq.row + 1 
+            };
             let col_char = (b'a' + sq.column as u8 - 1) as char;
-            format!("{}{}", col_char, sq.row)
+            format!("{}{}", col_char, fen_row)
         },
         None => "-".to_string(),
     };
