@@ -12,8 +12,19 @@ pub const KNIGHT_DELTAS: [(i32, i32); 8] = [
     (-1, -2),
 ];
 
-pub const BISHOP_DELTAS: [(i32, i32); 4] = [(1, 1), (1, -1), (-1, 1), (-1, -1)];
-pub const ROOK_DELTAS: [(i32, i32); 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
+pub const BISHOP_DELTAS: [(i32, i32); 4] = [
+    (1, 1), 
+    (1, -1), 
+    (-1, 1), 
+    (-1, -1)
+];
+
+pub const ROOK_DELTAS: [(i32, i32); 4] = [
+    (1, 0), 
+    (-1, 0), 
+    (0, 1),
+    (0, -1)
+];
 
 pub const QUEEN_DELTAS: [(i32, i32); 8] = [
     (1, 1),
@@ -260,6 +271,8 @@ pub fn get_white_pawn_moves(
         ) {
             if check_mask.check_mask[target_square.row - 1][target_square.column - 1] {
                 if let Some(target_piece) = target_square.piece_state {
+                    //Normal capture
+
                     add_pawn_move(
                         &mut moves,
                         state,
@@ -569,16 +582,33 @@ pub fn get_bishop_moves(state: PieceState, board: &Board, check_mask: &CheckMask
                 break;
             }
 
-            if !check_mask.check_mask[target_row - 1][target_col - 1] {
-                continue;
-            }
-
             if let (Some(previous_square), Some(target_square)) = (
                 access_board(board, cur_row, cur_col),
                 access_board(board, target_row, target_col),
             ) {
                 if let Some(captured) = target_square.piece_state {
-                    if captured.color != state.color {
+                    if check_mask.check_mask[target_row - 1][target_col - 1] {
+                        if captured.color != state.color {
+                            if let Some(mv) = create(
+                                state,
+                                previous_square,
+                                Square {
+                                    row: target_row,
+                                    column: target_col,
+                                    piece_state: Some(state),
+                                },
+                                state.color,
+                                Some(captured),
+                                None,
+                                false,
+                            ) {
+                                moves.push(mv);
+                            }
+                        }
+                    }
+                    break;
+                } else {
+                    if check_mask.check_mask[target_row - 1][target_col - 1] {
                         if let Some(mv) = create(
                             state,
                             previous_square,
@@ -588,29 +618,12 @@ pub fn get_bishop_moves(state: PieceState, board: &Board, check_mask: &CheckMask
                                 piece_state: Some(state),
                             },
                             state.color,
-                            Some(captured),
+                            None,
                             None,
                             false,
                         ) {
                             moves.push(mv);
                         }
-                    }
-                    break;
-                } else {
-                    if let Some(mv) = create(
-                        state,
-                        previous_square,
-                        Square {
-                            row: target_row,
-                            column: target_col,
-                            piece_state: Some(state),
-                        },
-                        state.color,
-                        None,
-                        None,
-                        false,
-                    ) {
-                        moves.push(mv);
                     }
                 }
             }
@@ -639,16 +652,33 @@ pub fn get_rook_moves(state: PieceState, board: &Board, check_mask: &CheckMask) 
                 break;
             }
 
-            if !check_mask.check_mask[target_row - 1][target_col - 1] {
-                continue;
-            }
-
             if let (Some(previous_square), Some(target_square)) = (
                 access_board(board, cur_row, cur_col),
                 access_board(board, target_row, target_col),
             ) {
                 if let Some(captured) = target_square.piece_state {
-                    if captured.color != state.color {
+                    if check_mask.check_mask[target_row - 1][target_col - 1] {
+                        if captured.color != state.color {
+                            if let Some(mv) = create(
+                                state,
+                                previous_square,
+                                Square {
+                                    row: target_row,
+                                    column: target_col,
+                                    piece_state: Some(state),
+                                },
+                                state.color,
+                                Some(captured),
+                                None,
+                                false,
+                            ) {
+                                moves.push(mv);
+                            }
+                        }
+                    }
+                    break;
+                } else {
+                    if check_mask.check_mask[target_row - 1][target_col - 1] {
                         if let Some(mv) = create(
                             state,
                             previous_square,
@@ -658,29 +688,12 @@ pub fn get_rook_moves(state: PieceState, board: &Board, check_mask: &CheckMask) 
                                 piece_state: Some(state),
                             },
                             state.color,
-                            Some(captured),
+                            None,
                             None,
                             false,
                         ) {
                             moves.push(mv);
                         }
-                    }
-                    break;
-                } else {
-                    if let Some(mv) = create(
-                        state,
-                        previous_square,
-                        Square {
-                            row: target_row,
-                            column: target_col,
-                            piece_state: Some(state),
-                        },
-                        state.color,
-                        None,
-                        None,
-                        false,
-                    ) {
-                        moves.push(mv);
                     }
                 }
             }
@@ -709,16 +722,33 @@ pub fn get_queen_moves(state: PieceState, board: &Board, check_mask: &CheckMask)
                 break;
             }
 
-            if !check_mask.check_mask[target_row - 1][target_col - 1] {
-                continue;
-            }
-
             if let (Some(previous_square), Some(target_square)) = (
                 access_board(board, cur_row, cur_col),
                 access_board(board, target_row, target_col),
             ) {
                 if let Some(piece_state) = target_square.piece_state {
-                    if piece_state.color != state.color {
+                    if check_mask.check_mask[target_row - 1][target_col - 1] {
+                        if piece_state.color != state.color {
+                            if let Some(mv) = create(
+                                state,
+                                previous_square,
+                                Square {
+                                    row: target_row,
+                                    column: target_col,
+                                    piece_state: Some(state),
+                                },
+                                state.color,
+                                Some(piece_state),
+                                None,
+                                false,
+                            ) {
+                                moves.push(mv);
+                            }
+                        }
+                    }
+                    break;
+                } else {
+                    if check_mask.check_mask[target_row - 1][target_col - 1] {
                         if let Some(mv) = create(
                             state,
                             previous_square,
@@ -728,29 +758,12 @@ pub fn get_queen_moves(state: PieceState, board: &Board, check_mask: &CheckMask)
                                 piece_state: Some(state),
                             },
                             state.color,
-                            Some(piece_state),
+                            None,
                             None,
                             false,
                         ) {
                             moves.push(mv);
                         }
-                    }
-                    break;
-                } else {
-                    if let Some(mv) = create(
-                        state,
-                        previous_square,
-                        Square {
-                            row: target_row,
-                            column: target_col,
-                            piece_state: Some(state),
-                        },
-                        state.color,
-                        None,
-                        None,
-                        false,
-                    ) {
-                        moves.push(mv);
                     }
                 }
             }
@@ -787,7 +800,7 @@ pub fn get_king_moves(state: PieceState, board: &Board, check_mask: &CheckMask) 
             access_board(board, cur_row, cur_col),
             access_board(board, target_row, target_col),
         ) {
-            if square_is_attacked(target_square, state.color, board, None) {
+            if square_is_attacked(target_square, state.color, board) {
                 continue;
             }
 
@@ -849,9 +862,9 @@ pub fn get_king_moves(state: PieceState, board: &Board, check_mask: &CheckMask) 
                 column: 6,
                 piece_state: Some(state),
             };
-            if !square_is_attacked(target_king_square, state.color, board, None)
-                && !square_is_attacked(king_side_transit_square, state.color, board, None)
-                && !square_is_attacked(king_square, state.color, board, None)
+            if !square_is_attacked(target_king_square, state.color, board)
+                && !square_is_attacked(king_side_transit_square, state.color, board)
+                && !square_is_attacked(king_square, state.color, board)
             {
                 if is_kingside_castling_valid(state, board, cur_row) {
                     if let Some(mv) = create(
@@ -879,9 +892,9 @@ pub fn get_king_moves(state: PieceState, board: &Board, check_mask: &CheckMask) 
                 column: 4,
                 piece_state: Some(state),
             };
-            if !square_is_attacked(target_king_square, state.color, board, None)
-                && !square_is_attacked(queen_side_transit_square, state.color, board, None)
-                && !square_is_attacked(king_square, state.color, board, None)
+            if !square_is_attacked(target_king_square, state.color, board)
+                && !square_is_attacked(queen_side_transit_square, state.color, board)
+                && !square_is_attacked(king_square, state.color, board)
             {
                 if is_queenside_castling_valid(state, board, cur_row as usize) {
                     if let Some(mv) = create(
@@ -1396,14 +1409,11 @@ mod tests {
             column: 3,
             piece_state: None,
         };
-        let mut mask = CheckMask {
-            check_mask: [[false; 8]; 8],
-        };
+
         assert!(square_is_attacked(
             square,
             Color::White,
-            &board,
-            Some(&mut mask)
+            &board
         ));
     }
 
@@ -1416,14 +1426,11 @@ mod tests {
             column: 4,
             piece_state: None,
         };
-        let mut mask = CheckMask {
-            check_mask: [[false; 8]; 8],
-        };
+
         assert!(!square_is_attacked(
             square,
             Color::White,
-            &board,
-            Some(&mut mask)
+            &board
         ));
     }
 
@@ -1436,14 +1443,11 @@ mod tests {
             column: 5,
             piece_state: None,
         };
-        let mut mask = CheckMask {
-            check_mask: [[false; 8]; 8],
-        };
+        
         assert!(square_is_attacked(
             square,
             Color::White,
-            &board,
-            Some(&mut mask)
+            &board
         ));
     }
 
@@ -1456,14 +1460,11 @@ mod tests {
             column: 4,
             piece_state: None,
         };
-        let mut mask = CheckMask {
-            check_mask: [[false; 8]; 8],
-        };
+        
         assert!(square_is_attacked(
             square,
             Color::White,
-            &board,
-            Some(&mut mask)
+            &board
         ));
     }
 
@@ -1550,8 +1551,7 @@ mod tests {
         let mask = create_check_mask(&board, Color::White);
         let queen_state = board.board[0][3].piece_state.unwrap();
         let queen_moves = get_queen_moves(queen_state, &board, &mask);
-        // Queen on d1 can slide diagonally through e2 to f3, g4, h5 (f2 pawn does NOT block this diagonal)
-        // d1->e2->f3->g4->h5, stops at h5 (edge). 4 moves.
+        
         assert_eq!(queen_moves.len(), 4, "queen should reach e2/f3/g4/h5, got {} moves: {:?}",
             queen_moves.len(),
             queen_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
