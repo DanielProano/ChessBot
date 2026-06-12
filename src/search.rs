@@ -1015,7 +1015,7 @@ fn test_white_pieces_after_e4_e6_breakdown() {
         bishop_f1_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
 
     let king = board.board[0][4].piece_state.unwrap();
-    let king_moves = get_king_moves(king, &board, &mask);
+    let king_moves = get_king_moves(king, &board);
     println!("King moves ({}): {:?}", king_moves.len(),
         king_moves.iter().map(|m| (m.current_square.row, m.current_square.column)).collect::<Vec<_>>());
 

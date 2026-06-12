@@ -773,7 +773,7 @@ pub fn get_queen_moves(state: PieceState, board: &Board, check_mask: &CheckMask)
     moves
 }
 
-pub fn get_king_moves(state: PieceState, board: &Board, check_mask: &CheckMask) -> Vec<Move> {
+pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
     if state.piece != Piece::King {
         println!("Warning: State pieces misaligned");
         return vec![];
@@ -789,10 +789,6 @@ pub fn get_king_moves(state: PieceState, board: &Board, check_mask: &CheckMask) 
         let target_col = (cur_col as i32 + col_offset) as usize;
 
         if !in_bounds(target_row, target_col) {
-            continue;
-        }
-
-        if !check_mask.check_mask[target_row - 1][target_col - 1] {
             continue;
         }
 
@@ -1369,7 +1365,7 @@ mod tests {
         place_piece(&mut board, 4, 4, Piece::King, Color::White);
         let state = board.board[3][3].piece_state.unwrap();
         let mask = full_check_mask();
-        let moves = get_king_moves(state, &board, &mask);
+        let moves = get_king_moves(state, &board);
         assert_eq!(moves.len(), 8);
     }
 
@@ -1380,7 +1376,7 @@ mod tests {
         place_piece(&mut board, 5, 5, Piece::Pawn, Color::White);
         let state = board.board[3][3].piece_state.unwrap();
         let mask = full_check_mask();
-        let moves = get_king_moves(state, &board, &mask);
+        let moves = get_king_moves(state, &board);
         assert!(
             moves
                 .iter()
@@ -1394,7 +1390,7 @@ mod tests {
         place_piece(&mut board, 1, 1, Piece::King, Color::White);
         let state = board.board[0][0].piece_state.unwrap();
         let mask = full_check_mask();
-        let moves = get_king_moves(state, &board, &mask);
+        let moves = get_king_moves(state, &board);
         assert_eq!(moves.len(), 3);
     }
 
@@ -1591,7 +1587,7 @@ mod tests {
         let board_state = empty_board_state();
         let mask = create_check_mask(&board, Color::White);
         let king_state = board.board[0][4].piece_state.unwrap();
-        let king_moves = get_king_moves(king_state, &board, &mask);
+        let king_moves = get_king_moves(king_state, &board);
         // e2 is empty so king can move there (it's not attacked by anything)
         assert_eq!(king_moves.len(), 1, "king should have 1 move (e2), got {}: {:?}",
             king_moves.len(),
@@ -1709,7 +1705,7 @@ fn test_black_move_breakdown_after_qh5() {
                         Piece::Bishop => get_bishop_moves(piece_state, &board, &mask),
                         Piece::Rook => get_rook_moves(piece_state, &board, &mask),
                         Piece::Queen => get_queen_moves(piece_state, &board, &mask),
-                        Piece::King => get_king_moves(piece_state, &board, &mask),
+                        Piece::King => get_king_moves(piece_state, &board),
                     };
                     moves.retain(|mv| is_legal_move(mv, &board, Color::Black));
                     println!("{:?} at ({},{}) has {} moves: {:?}",
@@ -1774,7 +1770,7 @@ fn test_black_move_breakdown_after_qh5_verbose() {
                         Piece::Bishop => get_bishop_moves(piece_state, &board, &mask),
                         Piece::Rook => get_rook_moves(piece_state, &board, &mask),
                         Piece::Queen => get_queen_moves(piece_state, &board, &mask),
-                        Piece::King => get_king_moves(piece_state, &board, &mask),
+                        Piece::King => get_king_moves(piece_state, &board),
                     };
                     moves.retain(|mv| is_legal_move(mv, &board, Color::Black));
 

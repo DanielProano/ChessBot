@@ -56,7 +56,7 @@ impl MoveList {
                                 get_queen_moves(piece_state, board, &mask)
                             },
                             Piece::King => {
-                                get_king_moves(piece_state, board, &mask)
+                                get_king_moves(piece_state, board)
                             }
                         };
 
