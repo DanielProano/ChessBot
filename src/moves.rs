@@ -333,7 +333,7 @@ pub fn get_black_pawn_moves(
         }
     }
 
-    if cur_row - 1 >= 1 {
+    if cur_row > 1 {
         if let (Some(square), Some(target_square)) = (
             access_board(board, cur_row, cur_col),
             access_board(board, cur_row - 1, cur_col),
@@ -842,22 +842,10 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
     // Castling moves
     if !state.has_moved {
         if let Some(previous_square) = access_board(board, cur_row, cur_col) {
-            let mut target_king_square = Square {
-                row: cur_row as usize,
-                column: 7,
-                piece_state: Some(state),
-            };
-            let king_square = Square {
-                row: cur_row as usize,
-                column: 5,
-                piece_state: Some(state),
-            };
+            let mut target_king_square = board.board[cur_row - 1][6];
+            let king_side_transit_square = board.board[cur_row - 1][5];
+            let king_square = board.board[cur_row - 1][4];
 
-            let king_side_transit_square = Square {
-                row: cur_row as usize,
-                column: 6,
-                piece_state: Some(state),
-            };
             if !square_is_attacked(target_king_square, state.color, board)
                 && !square_is_attacked(king_side_transit_square, state.color, board)
                 && !square_is_attacked(king_square, state.color, board)
@@ -877,17 +865,9 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
                 }
             }
 
-            target_king_square = Square {
-                row: cur_row as usize,
-                column: 3,
-                piece_state: Some(state),
-            };
+            target_king_square = board.board[cur_row - 1][2];
+            let queen_side_transit_square = board.board[cur_row - 1][3];
 
-            let queen_side_transit_square = Square {
-                row: cur_row as usize,
-                column: 4,
-                piece_state: Some(state),
-            };
             if !square_is_attacked(target_king_square, state.color, board)
                 && !square_is_attacked(queen_side_transit_square, state.color, board)
                 && !square_is_attacked(king_square, state.color, board)
