@@ -124,6 +124,21 @@ pub fn square_is_attacked(square: Square, active_color: Color, board: &Board) ->
         }
     }
 
+    for &(row, col) in &KING_DELTAS {
+        let target_row = (cur_row + row) as usize;
+        let target_col = (cur_col + col) as usize;
+
+        if in_bounds(target_row, target_col) {
+            if let Some(square) = access_board(board, target_row, target_col) {
+                if let Some(state) = square.piece_state {
+                    if state.piece == Piece::King && state.color != active_color {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
     false
 }
 
