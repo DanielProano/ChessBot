@@ -846,6 +846,12 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
             let king_side_transit_square = board.board[cur_row - 1][5];
             let king_square = board.board[cur_row - 1][4];
 
+            let mut new_king_square = Square {
+                row: target_king_square.row, 
+                column: target_king_square.column,
+                piece_state: Some(state)
+            };
+
             if !square_is_attacked(target_king_square, state.color, board)
                 && !square_is_attacked(king_side_transit_square, state.color, board)
                 && !square_is_attacked(king_square, state.color, board)
@@ -854,7 +860,7 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
                     if let Some(mv) = create(
                         state,
                         previous_square,
-                        target_king_square,
+                        new_king_square,
                         state.color,
                         None,
                         None,
@@ -868,6 +874,12 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
             target_king_square = board.board[cur_row - 1][2];
             let queen_side_transit_square = board.board[cur_row - 1][3];
 
+            new_king_square = Square {
+                row: target_king_square.row,
+                column: target_king_square.column,
+                piece_state: Some(state)
+            };
+
             if !square_is_attacked(target_king_square, state.color, board)
                 && !square_is_attacked(queen_side_transit_square, state.color, board)
                 && !square_is_attacked(king_square, state.color, board)
@@ -876,7 +888,7 @@ pub fn get_king_moves(state: PieceState, board: &Board) -> Vec<Move> {
                     if let Some(mv) = create(
                         state,
                         previous_square,
-                        target_king_square,
+                        new_king_square,
                         state.color,
                         None,
                         None,
